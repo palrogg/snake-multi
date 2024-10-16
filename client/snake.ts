@@ -15,7 +15,7 @@ export class Snake extends Phaser.GameObjects.Group implements SnakeInterface {
     length = 20
     bodies: any[]
 
-    constructor(scene: Phaser.Scene, x: number, y: number, direction = 'right') {
+    constructor(scene: Phaser.Scene, x: number, y: number, color=0x00ff00, direction = 'right') {
         super(scene)
         this.bodies = []
         
@@ -23,7 +23,7 @@ export class Snake extends Phaser.GameObjects.Group implements SnakeInterface {
         const spacing = 2;
 
         for (let i = 0; i < this.length; i++) {
-            const body = scene.add.circle(x, y, radius, 900);
+            const body = scene.add.circle(x, y, radius, color);
             body.depth = 1;
             scene.physics.add.existing(body);
             this.add(body)

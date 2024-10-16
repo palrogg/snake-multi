@@ -2,8 +2,11 @@ import Phaser from "phaser"
 import { Client, Room } from "colyseus.js"
 import { Snake } from "./snake"
 
-const stuff = new URL('assets/head.png', import.meta.url)
-console.log(stuff)
+import greenHead from './assets/img/snake_green_head_32.png';
+import greenHeadBlink from './assets/img/snake_green_eyes_32.png';
+import yellowHead from './assets/img/snake_yellow_head_32.png';
+import yellowHeadBlink from './assets/img/snake_yellow_eyes_32.png';
+
 export class GameScene extends Phaser.Scene {
     mapWidth = 800
     mapHeight = 600
@@ -42,7 +45,10 @@ export class GameScene extends Phaser.Scene {
     cursorKeys: Phaser.Types.Input.Keyboard.CursorKeys;
 
     preload() {
-        this.load.image('head', 'assets/head.png');
+        this.load.image('green_head', greenHead);
+        this.load.image('green_blink', greenHeadBlink);
+        this.load.image('yellow_head', yellowHead);
+        this.load.image('yellow_blink', yellowHeadBlink);
         this.cursorKeys = this.input.keyboard.createCursorKeys();
     }
 
@@ -67,20 +73,30 @@ export class GameScene extends Phaser.Scene {
 
             // When Server updates player locations, update scene
             this.room.state.players.onAdd((player, sessionId) => {
-                console.log(player)
-                const playerSnake = new Snake(this, player.x, player.y);
-                const playerHead = this.physics.add.image(player.x, player.y, "head")
+                const playerHead = this.physics.add.image(
+                    player.x,
+                    player.y,
+                    (sessionId === this.room.sessionId ? "green_head" : "yellow_head")
+                )
+                // TODO: use phaser logic (anims)
+                setInterval(() => {
+                    playerHead.setTexture(sessionId === this.room.sessionId ? "green_blink" : "yellow_blink")
+                    setTimeout(() => {
+                        playerHead.setTexture(sessionId === this.room.sessionId ? "green_head" : "yellow_head")
+                    }, 200)
+                }, 5000)
+                const playerTail = new Snake(this, player.x, player.y, (sessionId === this.room.sessionId ? 0x41c000 : 0xfff118));
+
                 playerHead.body.onOverlap = true;
                 playerHead.body.collisionCategory = 1
-                playerHead.alpha = 0.5;
                 playerHead.depth = 2
                 // keep a reference of it on `playerEntities`
                 this.playerEntities[sessionId] = playerHead;
-                this.playerTails[sessionId] = playerSnake;
+                this.playerTails[sessionId] = playerTail;
 
                 if (sessionId === this.room.sessionId) {
                     this.currentPlayer = playerHead;
-                    this.currentPlayerTail = playerSnake;
+                    this.currentPlayerTail = playerTail;
                     this.playerGroup.add(this.currentPlayer)
 
                     // remoteRef is being used for debug only
