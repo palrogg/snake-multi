@@ -2,6 +2,7 @@ import Phaser from "phaser"
 import { Client, Room } from "colyseus.js"
 import { Snake } from "./snake"
 
+// Sprites
 import greenHead from './assets/img/snake_green_head_32.png';
 import greenHeadBlink from './assets/img/snake_green_eyes_32.png';
 import yellowHead from './assets/img/snake_yellow_head_32.png';
@@ -35,10 +36,8 @@ export class GameScene extends Phaser.Scene {
     };
 
     // Player will be able to trigger server-side collision check
-    collisionPayload = {
-        snake: false,
-        food: false,
-    }
+    eatRequest = false
+    killRequest = false
     xRequest = 0;
     yRequest = 0;
 
@@ -61,7 +60,6 @@ export class GameScene extends Phaser.Scene {
             this.foodGroup.collisionCategory = 1
             this.playerGroup = new Phaser.Physics.Arcade.Group(this.physics.world, this)
             this.playerGroup.collisionCategory = 1
-
             this.room = await this.client.joinOrCreate("my_room")
 
             // When Server sends food location and value, add it to the scene
@@ -85,21 +83,22 @@ export class GameScene extends Phaser.Scene {
                         playerHead.setTexture(sessionId === this.room.sessionId ? "green_head" : "yellow_head")
                     }, 200)
                 }, 5000)
-                const playerTail = new Snake(this, player.x, player.y, (sessionId === this.room.sessionId ? 0x41c000 : 0xfff118));
+                const playerTail = new Snake(this, player.x, player.y, sessionId === this.room.sessionId);
 
                 playerHead.body.onOverlap = true;
-                playerHead.body.collisionCategory = 1
-                playerHead.depth = 2
+                playerHead.body.collisionCategory = 1;
+                playerHead.depth = 2;
                 // keep a reference of it on `playerEntities`
                 this.playerEntities[sessionId] = playerHead;
                 this.playerTails[sessionId] = playerTail;
 
                 if (sessionId === this.room.sessionId) {
+                    playerHead.depth = 4;
                     this.currentPlayer = playerHead;
                     this.currentPlayerTail = playerTail;
-                    this.playerGroup.add(this.currentPlayer)
+                    this.playerGroup.add(this.currentPlayer);
 
-                    // remoteRef is being used for debug only
+                    // for debug
                     this.remoteRef = this.add.rectangle(0, 0, playerHead.width, playerHead.height);
                     this.remoteRef.setStrokeStyle(1, 0xff0000);
                     player.onChange(() => {
@@ -132,13 +131,10 @@ export class GameScene extends Phaser.Scene {
 
             this.physics.world.on('overlap', (gameObject1, gameObject2, body1, body2) => {
                 console.log('Overlap:', gameObject1, gameObject2)
-                console.log(gameObject2.parent, body2.parent, body2.parent === this.foodGroup)
-                // Check if object is food
-                if (gameObject2.type === 'arc') {
-                    console.log('ok we pick the right one')
-                    gameObject2.setAlpha(0.1);
-                }
-                console.log(body2)
+                // TODO: Check if object is food: use group / collision mask / ...
+                gameObject2.setAlpha(0.2);
+                this.eatRequest = true
+                // TODO: send "validate overlap" input to server; remove food
             });
         }
         catch (e) {
@@ -172,7 +168,14 @@ export class GameScene extends Phaser.Scene {
         this.inputPayload.up = this.cursorKeys.up.isDown;
         this.inputPayload.down = this.cursorKeys.down.isDown;
         this.room.send(0, this.inputPayload);
-
+        if(this.eatRequest){
+            // TODO
+            this.eatRequest = false;
+        }
+        if(this.killRequest){
+            // TODO
+            this.killRequest = false;
+        }
 
         if (this.inputPayload.left) {
             this.yRequest = 0;
