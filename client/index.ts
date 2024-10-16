@@ -2,25 +2,40 @@ import Phaser from "phaser"
 import { Client, Room } from "colyseus.js"
 import { Snake } from "./snake"
 
+const stuff = new URL('assets/head.png', import.meta.url)
+console.log(stuff)
 export class GameScene extends Phaser.Scene {
-
+    mapWidth = 800
+    mapHeight = 600
     client = new Client("ws://localhost:2567")
     room: Room;
-    // we will assign each player visual representation here
-    // by their `sessionId`
+
+    // Players
     playerEntities: { [sessionId: string]: any } = {};
+    playerTails: { [sessionId: string]: any } = {};
+
+    // Physics
+    foodGroup: Phaser.Physics.Arcade.Group
+    playerGroup: Phaser.Physics.Arcade.Group
+
 
     currentPlayer: Phaser.Types.Physics.Arcade.ImageWithDynamicBody
-    currentPlayerSnake: Phaser.GameObjects.Group
+    currentPlayerTail: Phaser.GameObjects.Group
     remoteRef: Phaser.GameObjects.Rectangle
 
-    // local input cache
+    // Local input cache
     inputPayload = {
         left: false,
         right: false,
         up: false,
         down: false,
     };
+
+    // Player will be able to trigger server-side collision check
+    collisionPayload = {
+        snake: false,
+        food: false,
+    }
     xRequest = 0;
     yRequest = 0;
 
@@ -35,17 +50,38 @@ export class GameScene extends Phaser.Scene {
         console.log("Joining room...")
 
         try {
+            this.foodGroup = new Phaser.Physics.Arcade.Group(this.physics.world, this)
+            this.foodGroup.name = "food"
+            this.foodGroup.collisionCategory = 1
+            this.playerGroup = new Phaser.Physics.Arcade.Group(this.physics.world, this)
+            this.playerGroup.collisionCategory = 1
+
             this.room = await this.client.joinOrCreate("my_room")
+
+            // When Server sends food location and value, add it to the scene
+            this.room.state.foodItems.onAdd((item, key) => {
+                const food = this.add.circle(item.x, item.y, 5, 0xf0f0f0)
+                this.physics.add.existing(food);
+                this.foodGroup.add(food)
+            })
+
+            // When Server updates player locations, update scene
             this.room.state.players.onAdd((player, sessionId) => {
+                console.log(player)
                 const playerSnake = new Snake(this, player.x, player.y);
                 const playerHead = this.physics.add.image(player.x, player.y, "head")
-                // playerHead.alpha = 0;
+                playerHead.body.onOverlap = true;
+                playerHead.body.collisionCategory = 1
+                playerHead.alpha = 0.5;
+                playerHead.depth = 2
                 // keep a reference of it on `playerEntities`
                 this.playerEntities[sessionId] = playerHead;
+                this.playerTails[sessionId] = playerSnake;
 
                 if (sessionId === this.room.sessionId) {
                     this.currentPlayer = playerHead;
-                    this.currentPlayerSnake = playerSnake;
+                    this.currentPlayerTail = playerSnake;
+                    this.playerGroup.add(this.currentPlayer)
 
                     // remoteRef is being used for debug only
                     this.remoteRef = this.add.rectangle(0, 0, playerHead.width, playerHead.height);
@@ -62,21 +98,54 @@ export class GameScene extends Phaser.Scene {
                     });
                 }
             })
+
+            // When Players leave the room, clean scene
             this.room.state.players.onRemove((player, sessionId) => {
                 const entity = this.playerEntities[sessionId];
                 if (entity) {
-                    // destroy entity
                     entity.destroy();
-
-                    // clear local reference
                     delete this.playerEntities[sessionId];
                 }
+                const entityTail = this.playerTails[sessionId]
+                if (entityTail) {
+                    entityTail.destroy();
+                    delete this.playerTails[sessionId];
+                }
             });
-            console.log("SUCCESS")
+            this.physics.add.overlap(this.playerGroup, this.foodGroup)
+
+            this.physics.world.on('overlap', (gameObject1, gameObject2, body1, body2) => {
+                console.log('Overlap:', gameObject1, gameObject2)
+                console.log(gameObject2.parent, body2.parent, body2.parent === this.foodGroup)
+                // Check if object is food
+                if (gameObject2.type === 'arc') {
+                    console.log('ok we pick the right one')
+                    gameObject2.setAlpha(0.1);
+                }
+                console.log(body2)
+            });
         }
         catch (e) {
             console.error(e)
         }
+    }
+
+    horizontalWarp(x: number) {
+        if (x > this.mapWidth) {
+            return 0
+        } else if (x < 0) {
+            return this.mapWidth
+        }
+        return x
+    }
+
+    verticalWarp(y: number) {
+        if (y > this.mapHeight) {
+            return 0
+        } else if (y < 0) {
+            return this.mapHeight
+        }
+        return y
     }
 
     fixedTick(time: number, delta: number) {
@@ -105,11 +174,11 @@ export class GameScene extends Phaser.Scene {
 
         // Server must handle shiftPosition and collision detection
         if (this.xRequest !== 0) {
-            this.currentPlayer.x += this.xRequest * velocity;
-            this.currentPlayerSnake.moveTo(this.currentPlayer.x, this.currentPlayer.y)
+            this.currentPlayer.x = this.horizontalWarp(this.currentPlayer.x + this.xRequest * velocity);
+            this.currentPlayerTail.moveTo(this.currentPlayer.x, this.currentPlayer.y)
         } else if (this.yRequest !== 0) {
-            this.currentPlayer.y += this.yRequest * velocity;
-            this.currentPlayerSnake.moveTo(this.currentPlayer.x, this.currentPlayer.y)
+            this.currentPlayer.y = this.verticalWarp(this.currentPlayer.y + this.yRequest * velocity);
+            this.currentPlayerTail.moveTo(this.currentPlayer.x, this.currentPlayer.y)
         }
 
 
@@ -125,7 +194,7 @@ export class GameScene extends Phaser.Scene {
             entity.x = Phaser.Math.Linear(entity.x, serverX, 0.2);
             entity.y = Phaser.Math.Linear(entity.y, serverY, 0.2);
 
-            
+            this.playerTails[sessionId].moveTo(entity.x, entity.y)
         }
     }
 
@@ -149,7 +218,7 @@ const config: Phaser.Types.Core.GameConfig = {
     type: Phaser.AUTO,
     width: 800,
     height: 600,
-    backgroundColor: '#b6d53c',
+    backgroundColor: '#0C0D5A',
     parent: 'phaser-example',
     physics: {
         default: "arcade", arcade: {

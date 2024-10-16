@@ -1,13 +1,47 @@
-import { Room, Client } from "@colyseus/core";
-import { InputData, MyRoomState, Player } from "./schema/MyRoomState";
+import { Room, Client, Delayed } from "@colyseus/core";
+import { InputData, MyRoomState, Player, Food } from "./schema/MyRoomState";
 import { shiftPosition } from "./common";
+
 
 export class MyRoom extends Room<MyRoomState> {
   maxClients = 4;
+  foodCount = 0;
+  mapWidth = 800;
+  mapHeight = 600;
   fixedTimeStep = 1000 / 60;
+  bodies: any[] = [];
+  public delayedInterval!: Delayed;
+
+
+  getRandomLocation() {
+    const margin = 20
+    return {
+      x: Math.floor(margin + (Math.random() * (this.mapWidth - 2 * margin))),
+      y: Math.floor(margin + (Math.random() * (this.mapHeight - 2 * margin)))
+    }
+  }
+
+  horizontalWarp(x: number) {
+    if (x > this.mapWidth) {
+      return 0
+    } else if (x < 0) {
+      return this.mapWidth
+    }
+    return x
+  }
+
+  verticalWarp(y: number) {
+    if (y > this.mapHeight) {
+      return 0
+    } else if (y < 0) {
+      return this.mapHeight
+    }
+    return y
+  }
 
   onCreate(options: any) {
     let elapsedTime = 0;
+
     this.setSimulationInterval((deltaTime) => {
       elapsedTime += deltaTime
 
@@ -25,25 +59,45 @@ export class MyRoom extends Room<MyRoomState> {
       player.inputQueue.push(payload);
     });
 
+    // Add food periodically
+    this.clock.start()
+    this.delayedInterval = this.clock.setInterval(() => {
+      // Set food limit to 5
+      if (this.state.foodItems.size < 5) {
+        const randomLocation = this.getRandomLocation()
+        this.state.foodItems.set(`food_${this.foodCount}`, new Food({ x: randomLocation.x, y: randomLocation.y, value: 5 }))
+        this.foodCount++;
+      }
+    }, 3000);
+
   }
 
   onJoin(client: Client, options: any) {
     console.log(client.sessionId, "joined!");
-
-    const mapWidth = 800
-    const mapHeight = 600
-
     const player = new Player();
 
     // place Player at a random position
-    player.x = (Math.random() * mapWidth);
-    player.y = (Math.random() * mapHeight);
+    const randomLocation = this.getRandomLocation()
+    player.x = randomLocation.x
+    player.y = randomLocation.y
 
+    // x/y input requests
     player.xRequest = 0;
     player.yRequest = 0;
 
-    // place player in the map of players by its sessionId
-    // (client.sessionId is unique per connection!)
+    const length = 20;
+    const spacing = 2;
+
+    // player tail
+    let x = player.x + spacing;
+    const newBodies = []
+    for (let i = 0; i < length; i++) {
+      newBodies.push([x, player.y])
+      x += spacing;
+    }
+    this.bodies = newBodies;
+
+    // identify player by its sessionId
     this.state.players.set(client.sessionId, player);
   }
 
@@ -76,10 +130,11 @@ export class MyRoom extends Room<MyRoomState> {
           player.xRequest = 0;
           player.yRequest = 1;
         }
-        player.x += player.xRequest * velocity;
-        player.y += player.yRequest * velocity;
         player.tick = input.tick;
       }
+      player.x = this.horizontalWarp(player.x + player.xRequest * velocity);
+      player.y = this.verticalWarp(player.y + player.yRequest * velocity);
+      shiftPosition(player.bodies, player.x, player.y)
     });
   }
 
