@@ -27,7 +27,7 @@ export class GameScene extends Phaser.Scene {
 
 
     currentPlayer: Phaser.Types.Physics.Arcade.ImageWithDynamicBody
-    currentPlayerTail: Phaser.GameObjects.Group
+    currentPlayerTail: SnakeInterface
     remoteRef: Phaser.GameObjects.Rectangle
 
     // Local input cache
@@ -95,7 +95,7 @@ export class GameScene extends Phaser.Scene {
                         playerHead.setTexture(sessionId === this.room.sessionId ? "green_head" : "yellow_head")
                     }, 200)
                 }, 5000)
-                const playerTail: SnakeInterface = new Snake(this, player.x, player.y, sessionId === this.room.sessionId);
+                const playerTail = new Snake(this, player.x, player.y, sessionId === this.room.sessionId);
 
                 playerHead.body.onOverlap = true;
                 playerHead.body.collisionCategory = 1;
@@ -108,7 +108,7 @@ export class GameScene extends Phaser.Scene {
                     playerHead.setData('serverX', player.x);
                     playerHead.setData('serverY', player.y);
                     playerHead.setData('alive', player.alive)
-                    // playerHead.setData('length', player.length);
+                    playerHead.setData('tailSize', player.tailSize);
                 });
 
                 if (sessionId === this.room.sessionId) {
@@ -153,7 +153,7 @@ export class GameScene extends Phaser.Scene {
                 }
                 const entityTail = this.playerTails[sessionId]
                 if (entityTail) {
-                    entityTail.bodies.map(body =>{
+                    entityTail.bodies.map(body => {
                         body.destroy()
                     })
                     delete this.playerTails[sessionId];
@@ -197,7 +197,7 @@ export class GameScene extends Phaser.Scene {
         }
     }
 
-    interpolateIfClose(value: number, serverValue: number){
+    interpolateIfClose(value: number, serverValue: number) {
         /**
          * Returns an interpolation, unless the player is currently
          * warping from one bound to the other.
@@ -210,6 +210,10 @@ export class GameScene extends Phaser.Scene {
     }
 
     horizontalWarp(x: number) {
+        /**
+         * When a snake hits the boundary of the screen,
+         * it reappears at the opposite boundary.
+         */
         if (x > this.mapWidth) {
             return 0
         } else if (x < 0) {
@@ -228,6 +232,9 @@ export class GameScene extends Phaser.Scene {
     }
 
     fixedTick(time: number, delta: number) {
+        /**
+         * Fixed update function
+         */
         const velocity = 2; // Warning: this value also changes the tail spacing for now!
         // send input to the server
         this.inputPayload.left = this.cursorKeys.left.isDown;
@@ -274,22 +281,34 @@ export class GameScene extends Phaser.Scene {
 
         for (let sessionId in this.playerEntities) {
             const entity = this.playerEntities[sessionId];
-            // const entityTail = this.playerTails[sessionId];
-            const { serverX, serverY, alive } = entity.data.values;
+            const entityTail = this.playerTails[sessionId];
+            const { serverX, serverY, alive, tailSize } = entity.data.values;
+
             if (alive !== true) {
                 console.warn('This Player is DEAD!!!!! †††')
                 entity.setTexture('yellow_xx')
             }
 
+            if (tailSize > entityTail.length) {
+                console.log('Growth!!!', tailSize, entityTail.length)
+                entityTail.growTo(
+                    this,
+                    tailSize,
+                    new Phaser.Math.Vector2(
+                        entityTail.bodies[entityTail.bodies.length - 1].x,
+                        entityTail.bodies[entityTail.bodies.length - 1].y
+                    )
+                )
+            }
 
             // do not interpolate the current player,
             // unless necessary
             if (sessionId === this.room.sessionId) {
                 const tolerance = 5;
-                if(Math.abs(entity.x - serverX) > tolerance){
+                if (Math.abs(entity.x - serverX) > tolerance) {
                     entity.x = this.interpolateIfClose(entity.x, serverX)
                 }
-                if(Math.abs(entity.y - serverY) > tolerance){
+                if (Math.abs(entity.y - serverY) > tolerance) {
                     entity.y = this.interpolateIfClose(entity.y, serverY)
                 }
                 continue;

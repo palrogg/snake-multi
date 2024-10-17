@@ -8,47 +8,44 @@ interface Point {
 export interface SnakeInterface extends Phaser.GameObjects.Group {
     moveTo(x: number, y: number): void
     bodies: any[]
-    physicsGroup: Phaser.Physics.Arcade.Group
 }
 
 export class Snake extends Phaser.GameObjects.Group implements SnakeInterface {
-    x: number
-    y: number
-    length = 20
+    length: number = 0
+    spacing: number
+    radius: number
     bodies: any[]
-    public physicsGroup: Phaser.Physics.Arcade.Group
+    isUser: boolean
 
-    constructor(scene: Phaser.Scene, x: number, y: number, user = false, direction = 'right') {
-        super(scene)
-        this.bodies = []
+    constructor(scene: Phaser.Scene, x: number, y: number, user = false, length = 20, spacing = 2, radius = 10) {
+        super(scene);
+        this.bodies = [];
+        this.isUser = user
+        this.radius = radius;
+        this.spacing = spacing;
+        this.growTo(scene, length, new Phaser.Math.Vector2(x, y))
+    }
 
-        const radius = 10;
-        const spacing = 2;
+    moveTo(x: number, y: number) {
+        if (this.bodies.length > 0) {
+            Phaser.Actions.ShiftPosition(this.bodies, x, y, 1);
+        }
+    }
 
-        for (let i = 0; i < this.length; i++) {
-            const body = scene.add.circle(x, y, radius, user ? 0x41c000 : 0xfff118);
-            body.depth = user ? 3 : 1;
+    growTo(scene: Phaser.Scene, targetLength: number, origin: Phaser.Math.Vector2) {
+        const limit = targetLength - this.length
+        for (let i = 0; i < limit; i++) {
+            const body = scene.add.circle(
+                origin.x + (i * this.spacing),
+                origin.y,
+                this.radius,
+                this.isUser ? 0x41c000 : 0xfff118
+            );
+            body.depth = this.isUser ? 3 : 1;
             scene.physics.add.existing(body);
             this.add(body)
             this.bodies.push(body)
-            x += spacing;
         }
-        // this.physicsGroup = scene.physics.add.group(this.bodies)
-    }
-
-    public moveTo(x: number, y: number) {
-        // function logX(bodies){
-        //     let output = ''
-        //     for(let body of bodies){
-        //         output += `${body.x},`
-        //     }
-        //     console.log(output)
-        // }
-        // console.log('Before:', logX(this.bodies))
-        Phaser.Actions.ShiftPosition(this.bodies, x, y, 1);
-    }
-
-    growBy(length: number) {
-        // TODO
+        this.length = this.bodies.length
     }
 }
