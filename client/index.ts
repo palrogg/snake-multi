@@ -104,6 +104,13 @@ export class GameScene extends Phaser.Scene {
                 this.playerEntities[sessionId] = playerHead;
                 this.playerTails[sessionId] = playerTail;
 
+                player.onChange(() => {
+                    playerHead.setData('serverX', player.x);
+                    playerHead.setData('serverY', player.y);
+                    playerHead.setData('alive', player.alive)
+                    // playerHead.setData('length', player.length);
+                });
+
                 if (sessionId === this.room.sessionId) {
                     playerHead.depth = 4;
                     playerHead.name = 'User Head'
@@ -119,20 +126,14 @@ export class GameScene extends Phaser.Scene {
                     // console.log(this.currentPlayerTail.physicsGroup);
 
                     // for debug
-                    this.remoteRef = this.add.rectangle(0, 0, playerHead.width, playerHead.height);
-                    this.remoteRef.setStrokeStyle(1, 0xff0000);
-                    player.onChange(() => {
-                        this.remoteRef.x = player.x;
-                        this.remoteRef.y = player.y;
-                    });
+                    // this.remoteRef = this.add.rectangle(0, 0, playerHead.width, playerHead.height);
+                    // this.remoteRef.setStrokeStyle(1, 0xff0000);
+                    // player.onChange(() => {
+                    //     this.remoteRef.x = player.x;
+                    //     this.remoteRef.y = player.y;
+                    // });
                 } else {
                     // remote players
-                    player.onChange(() => {
-                        playerHead.setData('serverX', player.x);
-                        playerHead.setData('serverY', player.y);
-                        playerHead.setData('alive', player.alive)
-                        // playerHead.setData('length', player.length);
-                    });
                     playerHead.name = 'Enemy Head ' + sessionId
                     playerTail.name = 'Enemy Tail ' + sessionId
                     this.enemyPlayersGroup.add(playerHead);
@@ -191,6 +192,18 @@ export class GameScene extends Phaser.Scene {
         }
         catch (e) {
             console.error(e)
+        }
+    }
+
+    interpolateIfClose(value: number, serverValue: number){
+        /**
+         * Returns an interpolation, unless the player is currently
+         * warping from one bound to the other.
+         */
+        if (Math.abs(serverValue - value) < 300) {
+            return Phaser.Math.Linear(value, serverValue, 0.2);
+        } else {
+            return serverValue;
         }
     }
 
@@ -259,31 +272,32 @@ export class GameScene extends Phaser.Scene {
 
         for (let sessionId in this.playerEntities) {
             const entity = this.playerEntities[sessionId];
-            // do not interpolate the current player,
-            // unless necessary
-            if (sessionId === this.room.sessionId) {
-                continue;
-            }
-
             // const entityTail = this.playerTails[sessionId];
             const { serverX, serverY, alive } = entity.data.values;
-            if(alive !== true){
+            if (alive !== true) {
                 console.warn('This Player is DEAD!!!!! †††')
                 entity.setTexture('yellow_xx')
             }
 
-            // 3rd argument: interpolation speed
-            if (Math.abs(serverX - entity.x) < 300) {
-                entity.x = Phaser.Math.Linear(entity.x, serverX, 0.2);
-            } else {
-                entity.x = serverX;
+
+            // do not interpolate the current player,
+            // unless necessary
+            if (sessionId === this.room.sessionId) {
+                const tolerance = 5;
+                if(Math.abs(entity.x - serverX) > tolerance){
+                    entity.x = this.interpolateIfClose(entity.x, serverX)
+                }
+                if(Math.abs(entity.y - serverY) > tolerance){
+                    entity.y = this.interpolateIfClose(entity.y, serverY)
+                }
+                continue;
             }
 
-            if (Math.abs(serverY - entity.y) < 300) {
-                entity.y = Phaser.Math.Linear(entity.y, serverY, 0.2);
-            } else {
-                entity.y = serverY;
-            }
+
+
+            // 3rd argument: interpolation speed
+            entity.x = this.interpolateIfClose(entity.x, serverX)
+            entity.y = this.interpolateIfClose(entity.y, serverY)
             this.playerTails[sessionId].moveTo(entity.x, entity.y)
 
             // console.log('Entity length:', entity)
