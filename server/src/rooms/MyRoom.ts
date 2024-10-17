@@ -39,6 +39,14 @@ export class MyRoom extends Room<MyRoomState> {
     return y
   }
 
+  validateOverlap(x1: number, y1: number, x2: number, y2: number, xTolerance = 50, yTolerance = 50) {
+    // TODO: check overlap
+    console.log(`Validating overlap: (${x1}, ${y1}) vs (${x2}, ${y2})`)
+    const xDistance = Math.abs(x2 - x1)
+    const yDistance = Math.abs(y2 - y1)
+    return (xDistance < xTolerance && yDistance < yTolerance)
+  }
+
   onCreate(options: any) {
     let elapsedTime = 0;
 
@@ -65,7 +73,12 @@ export class MyRoom extends Room<MyRoomState> {
       // Set food limit to 5
       if (this.state.foodItems.size < 5) {
         const randomLocation = this.getRandomLocation()
-        this.state.foodItems.set(`food_${this.foodCount}`, new Food({ x: randomLocation.x, y: randomLocation.y, value: 5 }))
+        // From 5 to 10
+        const randomValue = 5 + Math.round(Math.random() * 5)
+        this.state.foodItems.set(
+          `food_${this.foodCount}`,
+          new Food({ x: randomLocation.x, y: randomLocation.y, value: randomValue })
+        )
         this.foodCount++;
       }
     }, 3000);
@@ -78,11 +91,14 @@ export class MyRoom extends Room<MyRoomState> {
 
     // place Player at a random position
     const randomLocation = this.getRandomLocation()
-    player.x = randomLocation.x
-    player.y = randomLocation.y
+    player.x = randomLocation.x;
+    player.y = randomLocation.y;
+    player.tailSize = 20;
+    player.kills = 0;
+    player.alive = true;
 
     // x/y input requests
-    player.xRequest = 0;
+    player.xRequest = -1;
     player.yRequest = 0;
 
     const length = 20;
@@ -130,11 +146,42 @@ export class MyRoom extends Room<MyRoomState> {
           player.xRequest = 0;
           player.yRequest = 1;
         }
+        if (input.eatRequest) {
+          console.log('Eat request:', input.eatRequest);
+          const targetFood = this.state.foodItems.get(input.eatRequest);
+          if (targetFood) {
+            // TODO: applly server check
+            const validOverlap = this.validateOverlap(player.x, player.y, targetFood.x, targetFood.y);
+            console.log('Overlap validity:', validOverlap);
+            if (validOverlap) {
+              // Make player grow
+              player.tailSize += targetFood.value;
+              this.state.foodItems.delete(input.eatRequest);
+            }
+          } else {
+            console.warn('Target food “', input.eatRequest, '” not found!');
+          }
+        }
+        if (input.killRequest) {
+          console.log('KILL request:', input.killRequest)
+          const targetEnemy = this.state.players.get(input.killRequest)
+          if (targetEnemy) {
+            // TODO: applly server check
+            const validOverlap = this.validateOverlap(player.x, player.y, targetEnemy.x, targetEnemy.y);
+            console.log('Kill Overlap validity:', validOverlap);
+            if (validOverlap) {
+              // Flag enemy player as dead
+              targetEnemy.alive = false;
+            }
+          } else {
+            console.warn('Target food “', input.eatRequest, '” not found!')
+          }
+        }
         player.tick = input.tick;
       }
       player.x = this.horizontalWarp(player.x + player.xRequest * velocity);
       player.y = this.verticalWarp(player.y + player.yRequest * velocity);
-      shiftPosition(player.bodies, player.x, player.y)
+      shiftPosition(player.bodies, player.x, player.y, 1)
     });
   }
 

@@ -6,6 +6,8 @@ export interface InputData {
   right: false;
   up: false;
   down: false;
+  eatRequest: string | null;
+  killRequest: string | null;
   tick: number;
 }
 
@@ -20,7 +22,10 @@ export class Player extends Schema {
   @type("number") y: number
   @type("number") xRequest: number
   @type("number") yRequest: number
+  @type("number") tailSize: number
+  @type("number") kills: number
   @type("number") tick: number
+  @type("boolean") alive: boolean
   bodies: any[] = [];
   inputQueue: any[] = [];
 }
