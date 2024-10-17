@@ -5,7 +5,7 @@ import { Snake, SnakeInterface } from "./snake"
 // Sprites
 import greenHead from './assets/img/snake_green_head_32.png';
 import greenHeadBlink from './assets/img/snake_green_eyes_32.png';
-import greenHeadXX from './assets/img/snake_yellow_xx_32.png';
+import greenHeadXX from './assets/img/snake_green_xx_32.png';
 import yellowHead from './assets/img/snake_yellow_head_32.png';
 import yellowHeadBlink from './assets/img/snake_yellow_eyes_32.png';
 import yellowHeadXX from './assets/img/snake_yellow_xx_32.png';
@@ -45,6 +45,7 @@ export class GameScene extends Phaser.Scene {
     killRequest: string | null = null
     xRequest = -1;
     yRequest = 0;
+    isUserAlive = true;
 
     cursorKeys: Phaser.Types.Input.Keyboard.CursorKeys;
 
@@ -237,23 +238,26 @@ export class GameScene extends Phaser.Scene {
          */
         const velocity = 2; // Warning: this value also changes the tail spacing for now!
         // send input to the server
-        this.inputPayload.left = this.cursorKeys.left.isDown;
-        this.inputPayload.right = this.cursorKeys.right.isDown;
-        this.inputPayload.up = this.cursorKeys.up.isDown;
-        this.inputPayload.down = this.cursorKeys.down.isDown;
-        if (this.eatRequest !== null) {
-            console.log('We send an “eatRequest” for', this.eatRequest)
-            this.inputPayload.eatRequest = this.eatRequest
-            this.eatRequest = null
+
+        if (this.isUserAlive) {
+            this.inputPayload.left = this.cursorKeys.left.isDown;
+            this.inputPayload.right = this.cursorKeys.right.isDown;
+            this.inputPayload.up = this.cursorKeys.up.isDown;
+            this.inputPayload.down = this.cursorKeys.down.isDown;
+            if (this.eatRequest !== null) {
+                console.log('We send an “eatRequest” for', this.eatRequest)
+                this.inputPayload.eatRequest = this.eatRequest
+                this.eatRequest = null
+            }
+            if (this.killRequest !== null) {
+                console.log('We send a KILL REQUEST for', this.killRequest)
+                this.inputPayload.killRequest = this.killRequest
+                this.killRequest = null;
+            }
+            this.room.send(0, this.inputPayload);
+            this.inputPayload.eatRequest = null
+            this.inputPayload.killRequest = null
         }
-        if (this.killRequest !== null) {
-            console.log('We send a KILL REQUEST for', this.killRequest)
-            this.inputPayload.killRequest = this.killRequest
-            this.killRequest = null;
-        }
-        this.room.send(0, this.inputPayload);
-        this.inputPayload.eatRequest = null
-        this.inputPayload.killRequest = null
 
         if (this.inputPayload.left) {
             this.yRequest = 0;
@@ -285,12 +289,36 @@ export class GameScene extends Phaser.Scene {
             const { serverX, serverY, alive, tailSize } = entity.data.values;
 
             if (alive !== true) {
-                console.warn('This Player is DEAD!!!!! †††')
-                entity.setTexture('yellow_xx')
+                console.warn('††† This Player is DEAD!!!!! †††');
+                console.log(sessionId, this.room.sessionId, sessionId === this.room.sessionId)
+                if (sessionId === this.room.sessionId) {
+                    // Current user
+                    this.isUserAlive = false;
+                    entity.setTexture('green_xx');
+                    this.xRequest = 0;
+                    this.yRequest = 0;
+                } else {
+                    entity.setTexture('yellow_xx');
+                }
+                this.tweens.add({
+                    targets: entity,
+                    angle: -120,
+                    duration: 200,
+                    ease: "Power2",
+                    yoyo: false,
+                    loop: 0,
+                });
+                entity.setTexture(sessionId === this.room.sessionId ? 'green_xx' : 'yellow_xx');
+                entityTail.bodies.map(body => {
+                    body.alpha = 0.5
+                    // TODO: transform body into food
+                });
+                continue;
             }
 
+            // Make snake grow visually if it ate food,
+            // according to server
             if (tailSize > entityTail.length) {
-                console.log('Growth!!!', tailSize, entityTail.length)
                 entityTail.growTo(
                     this,
                     tailSize,
@@ -314,14 +342,10 @@ export class GameScene extends Phaser.Scene {
                 continue;
             }
 
-
-
             // 3rd argument: interpolation speed
             entity.x = this.interpolateIfClose(entity.x, serverX)
             entity.y = this.interpolateIfClose(entity.y, serverY)
             this.playerTails[sessionId].moveTo(entity.x, entity.y)
-
-            // console.log('Entity length:', entity)
         }
     }
 

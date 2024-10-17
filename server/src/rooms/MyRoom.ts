@@ -115,6 +115,12 @@ export class MyRoom extends Room<MyRoomState> {
 
     // identify player by its sessionId
     this.state.players.set(client.sessionId, player);
+
+    // To work on  death sequence
+    // setTimeout(() => {
+    //   const thePlayer = this.state.players.get(client.sessionId);
+    //   thePlayer.alive = false
+    // }, 5000)
   }
 
   onLeave(client: Client, consented: boolean) {
@@ -133,6 +139,9 @@ export class MyRoom extends Room<MyRoomState> {
 
       // dequeue player inputs
       while (input = player.inputQueue.shift()) {
+        if (player.alive === false) {
+          continue;
+        }
         if (input.left) {
           player.xRequest = -1;
           player.yRequest = 0;
@@ -168,11 +177,10 @@ export class MyRoom extends Room<MyRoomState> {
           if (targetEnemy) {
             // TODO: applly server check
             const validOverlap = this.validateOverlap(player.x, player.y, targetEnemy.x, targetEnemy.y);
-            console.log('Kill Overlap validity:', validOverlap);
-            if (validOverlap) {
-              // Flag enemy player as dead
-              targetEnemy.alive = false;
-            }
+            console.log('Kill Overlap validity -- not ready yet, need to take tail into account:', validOverlap);
+            // Flag enemy player as dead
+            targetEnemy.alive = false;
+            // And turn him into meat
           } else {
             console.warn('Target food “', input.eatRequest, '” not found!')
           }
