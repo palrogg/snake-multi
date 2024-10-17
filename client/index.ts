@@ -153,7 +153,9 @@ export class GameScene extends Phaser.Scene {
                 }
                 const entityTail = this.playerTails[sessionId]
                 if (entityTail) {
-                    entityTail.destroy();
+                    entityTail.bodies.map(body =>{
+                        body.destroy()
+                    })
                     delete this.playerTails[sessionId];
                 }
             });
