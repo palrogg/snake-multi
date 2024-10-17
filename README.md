@@ -1,8 +1,8 @@
 # Snake-Multi
 
-Quick multiplayer snake with Colyseus and Phaser.
+Quick multiplayer snake with [Colyseus](https://colyseus.io/) and [Phaser](https://phaser.io/).
 
-Sprites by Bas de Reuver. https://opengameart.org/content/snake-sprites-2d
+Sprites by [Bas de Reuver](https://opengameart.org/content/snake-sprites-2d)
 
 - [x] Synchronize player movements
 - [x] Spawn food 
