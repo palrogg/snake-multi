@@ -19,6 +19,7 @@ export class GameScene extends Phaser.Scene {
       : "ws://217.69.7.21"
   );
   room: Room;
+  deadPlayers: string[] = [];
 
   // Players
   playerEntities: { [sessionId: string]: any } = {};
@@ -87,8 +88,10 @@ export class GameScene extends Phaser.Scene {
       this.room = await this.client.joinOrCreate("my_room");
 
       // When Server sends food location and value, add it to the scene
-      this.room.state.foodItems.onAdd((item, key) => {
-        const food = this.add.circle(item.x, item.y, item.value, 0xf0f0f0);
+      this.room.state.foodItems.onAdd((item: Food, key: string) => {
+        console.log(item, item.kind);
+        const color = item.kind === "player-meat" ? 0xfff118 : 0xf0f0f0;
+        const food = this.add.circle(item.x, item.y, item.value, color);
         food.name = key;
         this.physics.add.existing(food);
         this.foodGroup.add(food);
@@ -145,9 +148,7 @@ export class GameScene extends Phaser.Scene {
           this.currentPlayerTail = playerTail;
           this.userGroup.add(this.currentPlayer);
 
-          // console.log(this.currentPlayerTail.physicsGroup);
-
-          // for debug
+          // Show current server position for debug
           // this.remoteRef = this.add.rectangle(0, 0, playerHead.width, playerHead.height);
           // this.remoteRef.setStrokeStyle(1, 0xff0000);
           // player.onChange(() => {
@@ -204,10 +205,15 @@ export class GameScene extends Phaser.Scene {
           ) {
             this.killRequest = object2.name.split(" ")[2];
             this.enemyPlayersGroup.remove(object2);
+          } else if (
+            object1.name.substring(0, 9) === "User Head" &&
+            object2.name.substring(0, 10) === "Enemy Head"
+          ){
+            // Both will die
+            this.killRequest = object2.name.split(" ")[2]
+            this.enemyPlayersGroup.remove(object2);;
           }
-          // Else: both die?
-          // TODO
-          this.enemyPlayersGroup.remove(object2);
+            this.enemyPlayersGroup.remove(object2);
         }
 
         // TODO: send "validate overlap" input to server; remove food
@@ -311,36 +317,68 @@ export class GameScene extends Phaser.Scene {
       const { serverX, serverY, alive, tailSize } = entity.data.values;
 
       if (alive !== true) {
-        console.warn("††† This Player is DEAD!!!!! †††");
-        console.log(
-          sessionId,
-          this.room.sessionId,
-          sessionId === this.room.sessionId
-        );
-        if (sessionId === this.room.sessionId) {
-          // Current user
-          this.isUserAlive = false;
-          entity.setTexture("green_xx");
-          this.xRequest = 0;
-          this.yRequest = 0;
-        } else {
-          entity.setTexture("yellow_xx");
+        // Trigger death animations only once
+        if (!this.deadPlayers.includes(sessionId)) {
+          // If current user
+          if (sessionId === this.room.sessionId) {
+            this.isUserAlive = false;
+            entity.setTexture("green_xx");
+            this.xRequest = 0;
+            this.yRequest = 0;
+          } else {
+            entity.setTexture("yellow_xx");
+          }
+          this.tweens.add({
+            targets: entity,
+            angle: -120,
+            duration: 500,
+            ease: "Power2",
+            yoyo: false,
+            loop: 0,
+            onComplete: () => {
+              this.tweens.add({
+                targets: entityTail.bodies,
+                alpha: 0,
+                duration: 1000,
+                yoyo: false,
+                loop: 0,
+                onComplete: () => {
+                  if (sessionId === this.room.sessionId) {
+                    const text = this.add.text(
+                      400,
+                      300,
+                      "~RERFRESH\nto play again~",
+                      { align: "center" }
+                    );
+                    text.setOrigin(0.5, 0.5);
+                    text.setResolution(window.devicePixelRatio);
+                    text.setFontFamily("Arial");
+                    text.setFontStyle("bold");
+                    text.setFontSize(100);
+                    text.preFX.setPadding(32);
+                    const fx = text.preFX.addShadow(
+                      0,
+                      0,
+                      0.06,
+                      0.75,
+                      0x000000,
+                      4,
+                      0.8
+                    );
+                  }
+                  this.tweens.add({
+                    targets: entity,
+                    alpha: 0,
+                    duration: 1000,
+                    yoyo: false,
+                    loop: 0,
+                  });
+                },
+              });
+            },
+          });
         }
-        this.tweens.add({
-          targets: entity,
-          angle: -120,
-          duration: 200,
-          ease: "Power2",
-          yoyo: false,
-          loop: 0,
-        });
-        entity.setTexture(
-          sessionId === this.room.sessionId ? "green_xx" : "yellow_xx"
-        );
-        entityTail.bodies.map((body) => {
-          body.alpha = 0.5;
-          // TODO: transform body into food
-        });
+        this.deadPlayers.push(sessionId);
         continue;
       }
 
@@ -350,6 +388,7 @@ export class GameScene extends Phaser.Scene {
         entityTail.growTo(
           this,
           tailSize,
+          0,
           new Phaser.Math.Vector2(
             entityTail.bodies[entityTail.bodies.length - 1].x,
             entityTail.bodies[entityTail.bodies.length - 1].y

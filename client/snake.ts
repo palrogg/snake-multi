@@ -26,7 +26,7 @@ export class Snake extends Phaser.GameObjects.Group implements SnakeInterface {
     this.isUser = user;
     this.radius = radius;
     this.spacing = spacing;
-    this.growTo(scene, length, new Phaser.Math.Vector2(x, y));
+    this.growTo(scene, length, this.spacing, new Phaser.Math.Vector2(x, y));
   }
 
   moveTo(x: number, y: number) {
@@ -38,12 +38,13 @@ export class Snake extends Phaser.GameObjects.Group implements SnakeInterface {
   growTo(
     scene: Phaser.Scene,
     targetLength: number,
+    spacing: number,
     origin: Phaser.Math.Vector2
   ) {
     const limit = targetLength - this.length;
     for (let i = 0; i < limit; i++) {
       const body = scene.add.circle(
-        origin.x + i * this.spacing,
+        origin.x + i * spacing,
         origin.y,
         this.radius,
         this.isUser ? 0x41c000 : 0xfff118

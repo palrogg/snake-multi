@@ -14,6 +14,7 @@ export class Food extends Schema {
   @type("number") x: number;
   @type("number") y: number;
   @type("number") value: number;
+  @type("string") kind: "random" | "player-meat";
 }
 
 export class Player extends Schema {

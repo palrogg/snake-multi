@@ -1,4 +1,23 @@
+export function createBodies(
+  x: number,
+  y: number,
+  spacing: number,
+  count: number
+) {
+  const newBodies = [];
+  x += spacing; // here we can add initial spacing, BUT
+  for (let i = 0; i < count; i++) {
+    newBodies.push([x, y]);
+    x += spacing;
+  }
+  return newBodies;
+}
+
 export function shiftPosition(
+  /**
+   * Take an array of “snake tail” positions as input and shift them.
+   * Copy-paste of the Phaser shiftPosition function (author, link?).
+   */
   items: any[],
   x: number,
   y: number,
@@ -7,8 +26,6 @@ export function shiftPosition(
   if (items.length === 0) {
     return;
   }
-
-  console.log(items);
 
   var px;
   var py;

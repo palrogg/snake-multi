@@ -1,6 +1,6 @@
 import { Room, Client, Delayed } from "@colyseus/core";
 import { InputData, MyRoomState, Player, Food } from "./schema/MyRoomState";
-import { shiftPosition } from "./common";
+import { createBodies, shiftPosition } from "./common";
 
 export class MyRoom extends Room<MyRoomState> {
   maxClients = 4;
@@ -63,13 +63,17 @@ export class MyRoom extends Room<MyRoomState> {
         this.fixedTick(this.fixedTimeStep);
       }
     });
+
     this.setState(new MyRoomState());
 
+    // Enqueue player input to buffer
     this.onMessage(0, (client, payload) => {
-      // get reference to the player who sent the message
       const player = this.state.players.get(client.sessionId);
-      // enqueue input to user input buffer.
-      player.inputQueue.push(payload);
+      if (player && player.hasOwnProperty("inputQueue")) {
+        player.inputQueue.push(payload);
+      } else {
+        console.warn("No player or no property!");
+      }
     });
 
     // Add food periodically
@@ -86,6 +90,7 @@ export class MyRoom extends Room<MyRoomState> {
             x: randomLocation.x,
             y: randomLocation.y,
             value: randomValue,
+            kind: "random", // versus player-mean (when a player dies)
           })
         );
         this.foodCount++;
@@ -113,13 +118,7 @@ export class MyRoom extends Room<MyRoomState> {
     const spacing = 2;
 
     // player tail
-    let x = player.x + spacing;
-    const newBodies = [];
-    for (let i = 0; i < length; i++) {
-      newBodies.push([x, player.y]);
-      x += spacing;
-    }
-    this.bodies = newBodies;
+    player.bodies = createBodies(player.x, player.y, spacing, length);
 
     // identify player by its sessionId
     this.state.players.set(client.sessionId, player);
@@ -127,8 +126,13 @@ export class MyRoom extends Room<MyRoomState> {
     // To work on  death sequence
     // setTimeout(() => {
     //   const thePlayer = this.state.players.get(client.sessionId);
-    //   thePlayer.alive = false
-    // }, 5000)
+    //   console.log("diiiiie");
+    //   if (thePlayer) {
+    //     thePlayer.alive = false;
+    //     this.addSnakeMeat(thePlayer);
+    //     thePlayer.x = 200;
+    //   }
+    // }, 1000);
   }
 
   onLeave(client: Client, consented: boolean) {
@@ -138,6 +142,22 @@ export class MyRoom extends Room<MyRoomState> {
 
   onDispose() {
     console.log("room", this.roomId, "disposing...");
+  }
+
+  addSnakeMeat(player: Player) {
+    console.log("Adding snake meat! Body length:", player.bodies.length);
+    for (let body of player.bodies) {
+      this.state.foodItems.set(
+        `food_meat_${this.foodCount}`,
+        new Food({
+          x: body.x,
+          y: body.y,
+          value: 10,
+          kind: "player-meat",
+        })
+      );
+      this.foodCount++;
+    }
   }
 
   fixedTick(timeStep: number) {
@@ -167,7 +187,7 @@ export class MyRoom extends Room<MyRoomState> {
           console.log("Eat request:", input.eatRequest);
           const targetFood = this.state.foodItems.get(input.eatRequest);
           if (targetFood) {
-            // TODO: applly server check
+            // TODO: apply server check
             const validOverlap = this.validateOverlap(
               player.x,
               player.y,
@@ -178,6 +198,11 @@ export class MyRoom extends Room<MyRoomState> {
             if (validOverlap) {
               // Make player grow
               player.tailSize += targetFood.value;
+              // TODO: add bodies to player
+              const lastBody = player.bodies[player.bodies.length - 1];
+              player.bodies.concat(
+                createBodies(lastBody.x, lastBody.y, 0, targetFood.value)
+              );
               this.state.foodItems.delete(input.eatRequest);
             }
           } else {
@@ -202,6 +227,7 @@ export class MyRoom extends Room<MyRoomState> {
             // Flag enemy player as dead
             targetEnemy.alive = false;
             // And turn him into meat
+            this.addSnakeMeat(targetEnemy);
           } else {
             console.warn("Target food “", input.eatRequest, "” not found!");
           }
