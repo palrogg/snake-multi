@@ -9,7 +9,7 @@ Run locally:
 `cd client; npm run`
 
 Build client:
-`cd client; npx parcel build index.html --public-url ./`
+`cd client; npx parcel build index.html --public-url /snake/ --dist-dir snake`
 
 - [x] Synchronize player movements
 - [x] Spawn food
@@ -18,6 +18,10 @@ Build client:
 - [x] Create death sequence
 - [ ] Fine-tune server-client sync
   - [ ] Server validation should take snake tails into account
+  - [ ] Sync available food (for now: not synced with other players than the one who ate it)
+- [ ] Mobile-friendly
+  - [ ] Same Phaser config as [Quatre apparts](https://github.com/GameLab-UNIL-EPFL/quatre-apparts-et-un-confinement)?
+  - [ ] Mobile inputs cf. 
 - [ ] Add a leaderboard
 - [ ] Make it cleaner and better
   - [ ] New players should not spawn directly in front of existing players
