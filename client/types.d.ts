@@ -9,3 +9,8 @@ interface Food {
   value: number;
   kind: "random" | "player-meat";
 }
+
+interface Circle {
+  x: number;
+  y: number;
+}
