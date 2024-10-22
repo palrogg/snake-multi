@@ -167,13 +167,13 @@ export class GameScene extends Phaser.Scene {
           this.debugRects = player.circles.map((i) => {
             const rect = this.add.rectangle(i.x, i.y, 4, 4, 0xff0000);
             rect.depth = 5;
-            return rect
+            return rect;
           });
           player.onChange(() => {
             player.circles.map((circle: Circle, i: number) => {
-              this.debugRects[i].x = circle.x
-              this.debugRects[i].y = circle.y
-            })
+              this.debugRects[i].x = circle.x;
+              this.debugRects[i].y = circle.y;
+            });
           });
         } else {
           // remote players
@@ -186,7 +186,6 @@ export class GameScene extends Phaser.Scene {
           });
         }
       });
-      
 
       // When Players leave the room, clean scene
       this.room.state.players.onRemove((player, sessionId) => {
@@ -208,9 +207,9 @@ export class GameScene extends Phaser.Scene {
       });
       this.physics.add.overlap(this.userGroup, this.foodGroup);
       this.physics.add.overlap(this.userGroup, this.enemyPlayersGroup);
-      console.log('...')
+      console.log("...");
 
-      this.physics.world.on("overlap", (object1, object2, body1, body2) => {
+      this.physics.world.on("overlap", (object1: any, object2: any) => {
         console.log(`Overlap: “${object1.name}” vs “${object2.name}”`);
         // TODO: Check if object is food: use group / collision mask / ...
 
