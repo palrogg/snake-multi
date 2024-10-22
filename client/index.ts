@@ -203,7 +203,7 @@ export class GameScene extends Phaser.Scene {
           delete this.playerTails[sessionId];
         }
       });
-      this.room.state.food.onRemove((item, key) => {
+      this.room.state.foodItems.onRemove((item, key) => {
         console.log("Remove food! Key:", key);
       });
       this.physics.add.overlap(this.userGroup, this.foodGroup);
