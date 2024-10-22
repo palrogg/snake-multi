@@ -16,7 +16,7 @@ export class GameScene extends Phaser.Scene {
   client = new Client(
     window.location.hostname === "localhost"
       ? "ws://localhost:2567"
-      : "ws://217.69.7.21"
+      : "https://fr-cdg-226fc197.colyseus.cloud"
   );
   room: Room;
   deadPlayers: string[] = [];
@@ -33,6 +33,7 @@ export class GameScene extends Phaser.Scene {
   currentPlayer: Phaser.Types.Physics.Arcade.ImageWithDynamicBody;
   currentPlayerTail: SnakeInterface;
   remoteRef: Phaser.GameObjects.Rectangle;
+  debugRects: Phaser.GameObjects.Rectangle[];
 
   // Local input cache
   inputPayload = {
@@ -89,7 +90,7 @@ export class GameScene extends Phaser.Scene {
 
       // When Server sends food location and value, add it to the scene
       this.room.state.foodItems.onAdd((item: Food, key: string) => {
-        console.log(item, item.kind);
+        // console.log(item, item.kind);
         const color = item.kind === "player-meat" ? 0xfff118 : 0xf0f0f0;
         const food = this.add.circle(item.x, item.y, item.value, color);
         food.name = key;
@@ -130,6 +131,9 @@ export class GameScene extends Phaser.Scene {
         this.playerTails[sessionId] = playerTail;
 
         player.onChange(() => {
+          // if(this.inputPayload.down){
+          //   console.log(player.circles);
+          // }
           playerHead.setData("serverX", player.x);
           playerHead.setData("serverY", player.y);
           playerHead.setData("alive", player.alive);
@@ -149,12 +153,28 @@ export class GameScene extends Phaser.Scene {
           this.userGroup.add(this.currentPlayer);
 
           // Show current server position for debug
-          // this.remoteRef = this.add.rectangle(0, 0, playerHead.width, playerHead.height);
-          // this.remoteRef.setStrokeStyle(1, 0xff0000);
-          // player.onChange(() => {
-          //     this.remoteRef.x = player.x;
-          //     this.remoteRef.y = player.y;
-          // });
+          this.remoteRef = this.add.rectangle(
+            0,
+            0,
+            playerHead.width,
+            playerHead.height
+          );
+          this.remoteRef.setStrokeStyle(1, 0xff0000);
+          player.onChange(() => {
+            this.remoteRef.x = player.x;
+            this.remoteRef.y = player.y;
+          });
+          this.debugRects = player.circles.map((i) => {
+            const rect = this.add.rectangle(i.x, i.y, 4, 4, 0xff0000);
+            rect.depth = 5;
+            return rect
+          });
+          player.onChange(() => {
+            player.circles.map((circle: Circle, i: number) => {
+              this.debugRects[i].x = circle.x
+              this.debugRects[i].y = circle.y
+            })
+          });
         } else {
           // remote players
           playerHead.name = "Enemy Head " + sessionId;
@@ -166,6 +186,7 @@ export class GameScene extends Phaser.Scene {
           });
         }
       });
+      
 
       // When Players leave the room, clean scene
       this.room.state.players.onRemove((player, sessionId) => {
@@ -182,8 +203,12 @@ export class GameScene extends Phaser.Scene {
           delete this.playerTails[sessionId];
         }
       });
+      this.room.state.food.onRemove((item, key) => {
+        console.log("Remove food! Key:", key);
+      });
       this.physics.add.overlap(this.userGroup, this.foodGroup);
       this.physics.add.overlap(this.userGroup, this.enemyPlayersGroup);
+      console.log('...')
 
       this.physics.world.on("overlap", (object1, object2, body1, body2) => {
         console.log(`Overlap: “${object1.name}” vs “${object2.name}”`);
@@ -208,12 +233,12 @@ export class GameScene extends Phaser.Scene {
           } else if (
             object1.name.substring(0, 9) === "User Head" &&
             object2.name.substring(0, 10) === "Enemy Head"
-          ){
+          ) {
             // Both will die
-            this.killRequest = object2.name.split(" ")[2]
-            this.enemyPlayersGroup.remove(object2);;
-          }
+            this.killRequest = object2.name.split(" ")[2];
             this.enemyPlayersGroup.remove(object2);
+          }
+          this.enemyPlayersGroup.remove(object2);
         }
 
         // TODO: send "validate overlap" input to server; remove food
