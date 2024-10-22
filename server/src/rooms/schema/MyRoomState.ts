@@ -1,4 +1,4 @@
-import { Schema, MapSchema, Context, type } from "@colyseus/schema";
+import { Schema, ArraySchema, MapSchema, Context, type } from "@colyseus/schema";
 
 export interface InputData {
   left: false;
@@ -17,6 +17,11 @@ export class Food extends Schema {
   @type("string") kind: "random" | "player-meat";
 }
 
+export class Circle extends Schema {
+  @type("number") x: number;
+  @type("number") y: number;
+}
+
 export class Player extends Schema {
   @type("number") x: number;
   @type("number") y: number;
@@ -27,6 +32,8 @@ export class Player extends Schema {
   @type("number") tick: number;
   @type("boolean") alive: boolean;
   bodies: any[] = [];
+  @type({ array: Circle }) circles = new ArraySchema<Circle>();
+
   inputQueue: any[] = [];
 }
 

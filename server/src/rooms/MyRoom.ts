@@ -1,5 +1,12 @@
 import { Room, Client, Delayed } from "@colyseus/core";
-import { InputData, MyRoomState, Player, Food } from "./schema/MyRoomState";
+import { ArraySchema } from "@colyseus/schema";
+import {
+  InputData,
+  MyRoomState,
+  Player,
+  Food,
+  Circle,
+} from "./schema/MyRoomState";
 import { createBodies, shiftPosition } from "./common";
 
 export class MyRoom extends Room<MyRoomState> {
@@ -10,6 +17,7 @@ export class MyRoom extends Room<MyRoomState> {
   fixedTimeStep = 1000 / 60;
   bodies: any[] = [];
   public delayedInterval!: Delayed;
+  circles: ArraySchema<Circle>;
 
   getRandomLocation() {
     const margin = 20;
@@ -119,6 +127,11 @@ export class MyRoom extends Room<MyRoomState> {
 
     // player tail
     player.bodies = createBodies(player.x, player.y, spacing, length);
+    const collection = new ArraySchema<Circle>();
+    player.bodies.forEach((body, i) => {
+      collection.push(new Circle({ x: body[0], y: body[1] }));
+    });
+    player.circles = collection;
 
     // identify player by its sessionId
     this.state.players.set(client.sessionId, player);
@@ -237,6 +250,17 @@ export class MyRoom extends Room<MyRoomState> {
       player.x = this.horizontalWarp(player.x + player.xRequest * velocity);
       player.y = this.verticalWarp(player.y + player.yRequest * velocity);
       shiftPosition(player.bodies, player.x, player.y, 1);
+      for (let i = 0; i < player.circles.length; i++) {
+        player.circles[i].x = player.bodies[i].x;
+        player.circles[i].y = player.bodies[i].y;
+      }
+
+      // TODO: use the ArraySchema directly
+      // const collection = new ArraySchema<Circle>();
+      // player.bodies.forEach((body, i) => {
+      //   collection.push(new Circle({ x: body[0], y: body[1] }));
+      // });
+      // player.circles = collection;
     });
   }
 }
