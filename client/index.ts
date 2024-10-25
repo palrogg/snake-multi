@@ -170,6 +170,17 @@ export class GameScene extends Phaser.Scene {
             return rect;
           });
           player.onChange(() => {
+            // Add new debug rects if needed
+            if (player.circles.length > this.debugRects.length) {
+              const newRects = player.circles
+                .slice(this.debugRects.length)
+                .map((i) => {
+                  const rect = this.add.rectangle(i.x, i.y, 4, 4, 0xff0000);
+                  rect.depth = 5;
+                  return rect;
+                });
+              this.debugRects = this.debugRects.concat(newRects);
+            }
             player.circles.map((circle: Circle, i: number) => {
               this.debugRects[i].x = circle.x;
               this.debugRects[i].y = circle.y;

@@ -18,6 +18,7 @@ export class MyRoom extends Room<MyRoomState> {
   bodies: any[] = [];
   public delayedInterval!: Delayed;
   circles: ArraySchema<Circle>;
+  debug = true;
 
   getRandomLocation() {
     const margin = 20;
@@ -126,6 +127,7 @@ export class MyRoom extends Room<MyRoomState> {
     const spacing = 2;
 
     // player tail
+    // The Collection only serves for debug
     player.bodies = createBodies(player.x, player.y, spacing, length);
     const collection = new ArraySchema<Circle>();
     player.bodies.forEach((body, i) => {
@@ -211,11 +213,24 @@ export class MyRoom extends Room<MyRoomState> {
             if (validOverlap) {
               // Make player grow
               player.tailSize += targetFood.value;
-              // TODO: add bodies to player
               const lastBody = player.bodies[player.bodies.length - 1];
-              player.bodies.concat(
-                createBodies(lastBody.x, lastBody.y, 0, targetFood.value)
+              const newBodies = createBodies(
+                lastBody.x,
+                lastBody.y,
+                0,
+                targetFood.value
               );
+              player.bodies = player.bodies.concat(newBodies);
+
+              // If debug is active,
+              // update the synchronized tail
+              if (this.debug === true) {
+                const c = new ArraySchema<Circle>();
+                player.bodies.forEach((body, i) => {
+                  c.push(new Circle({ x: body[0], y: body[1] }));
+                });
+                player.circles = c;
+              }
               this.state.foodItems.delete(input.eatRequest);
             }
           } else {
@@ -250,17 +265,12 @@ export class MyRoom extends Room<MyRoomState> {
       player.x = this.horizontalWarp(player.x + player.xRequest * velocity);
       player.y = this.verticalWarp(player.y + player.yRequest * velocity);
       shiftPosition(player.bodies, player.x, player.y, 1);
-      for (let i = 0; i < player.circles.length; i++) {
-        player.circles[i].x = player.bodies[i].x;
-        player.circles[i].y = player.bodies[i].y;
+      if (this.debug === true) {
+        for (let i = 0; i < player.circles.length; i++) {
+          player.circles[i].x = player.bodies[i].x;
+          player.circles[i].y = player.bodies[i].y;
+        }
       }
-
-      // TODO: use the ArraySchema directly
-      // const collection = new ArraySchema<Circle>();
-      // player.bodies.forEach((body, i) => {
-      //   collection.push(new Circle({ x: body[0], y: body[1] }));
-      // });
-      // player.circles = collection;
     });
   }
 }
