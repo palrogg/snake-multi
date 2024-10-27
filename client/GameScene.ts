@@ -91,7 +91,6 @@ export class GameScene extends Phaser.Scene {
 
       // When Server sends food location and value, add it to the scene
       this.room.state.foodItems.onAdd((item: Food, key: string) => {
-        // console.log(item, item.kind);
         const color = item.kind === "player-meat" ? 0xfff118 : 0xf0f0f0;
         const food = this.add.circle(item.x, item.y, item.value, color);
         food.name = key;
@@ -101,6 +100,10 @@ export class GameScene extends Phaser.Scene {
 
       // When Server updates player locations, update scene
       this.room.state.players.onAdd((player, sessionId) => {
+        // TODO: add player to Scoreboard
+
+        // TODO: move everything related to snake creation
+        // in snake.ts
         const playerHead = this.physics.add.image(
           player.x,
           player.y,
@@ -132,9 +135,6 @@ export class GameScene extends Phaser.Scene {
         this.playerTails[sessionId] = playerTail;
 
         player.onChange(() => {
-          // if(this.inputPayload.down){
-          //   console.log(player.circles);
-          // }
           playerHead.setData("serverX", player.x);
           playerHead.setData("serverY", player.y);
           playerHead.setData("alive", player.alive);
@@ -220,11 +220,9 @@ export class GameScene extends Phaser.Scene {
       });
       this.physics.add.overlap(this.userGroup, this.foodGroup);
       this.physics.add.overlap(this.userGroup, this.enemyPlayersGroup);
-      console.log("...");
 
       this.physics.world.on("overlap", (object1: any, object2: any) => {
         console.log(`Overlap: “${object1.name}” vs “${object2.name}”`);
-        // TODO: Check if object is food: use group / collision mask / ...
 
         if (object2.name.substring(0, 4) === "food") {
           // Food object
@@ -251,18 +249,16 @@ export class GameScene extends Phaser.Scene {
           }
           this.enemyPlayersGroup.remove(object2);
         }
-
-        // TODO: send "validate overlap" input to server; remove food
       });
-      
+
       // Work in progress ScoreBoard
       const scoreBoard = new ScoreBoard(
         this,
         [
-          { playerName: "string", playerId: "string", size: 123, kills: 23 },
+          { playerName: "Ronald", playerId: "string", size: 123, kills: 23 },
           {
             playerName: "Jake",
-            playerId: "Ronald",
+            playerId: "sdfldsfkj",
             size: 1222233,
             kills: 223,
           },
