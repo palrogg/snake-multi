@@ -1,4 +1,5 @@
 import Phaser from "phaser";
+import { TitleScene } from "./TitleScene";
 import { GameScene } from "./GameScene";
 
 const config: Phaser.Types.Core.GameConfig = {
@@ -14,7 +15,7 @@ const config: Phaser.Types.Core.GameConfig = {
     },
   },
   pixelArt: true,
-  scene: [GameScene],
+  scene: [TitleScene, GameScene],
 };
 
 // instantiate the game

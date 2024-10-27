@@ -85,14 +85,14 @@ export class Snake {
         this.currentScene.tweens.add({
           targets: this.bodies,
           alpha: 0,
-          duration: 1000,
+          duration: 500,
           yoyo: false,
           loop: 0,
           onComplete: () => {
             this.currentScene.tweens.add({
               targets: this.head,
               alpha: 0,
-              duration: 1000,
+              duration: 500,
               yoyo: false,
               loop: 0,
             });
@@ -129,6 +129,7 @@ export class Snake {
     }
     this.length = this.bodies.length;
   }
+  
   destroy() {
     console.log("Destroy entity!!");
     this.stopBlink();

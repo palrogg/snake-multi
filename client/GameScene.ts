@@ -3,15 +3,11 @@ import { Client, Room } from "colyseus.js";
 import { Snake, SnakeInterface } from "./snake";
 import { ScoreBoard } from "./ScoreBoard";
 
-// Sprites
-import greenHead from "./assets/img/snake_green_head_32.png";
-import greenHeadBlink from "./assets/img/snake_green_eyes_32.png";
-import greenHeadXX from "./assets/img/snake_green_xx_32.png";
-import yellowHead from "./assets/img/snake_yellow_head_32.png";
-import yellowHeadBlink from "./assets/img/snake_yellow_eyes_32.png";
-import yellowHeadXX from "./assets/img/snake_yellow_xx_32.png";
-
 export class GameScene extends Phaser.Scene {
+  constructor() {
+    super({ key: "GameScene" });
+  }
+
   mapWidth = 800;
   mapHeight = 600;
   client = new Client(
@@ -30,6 +26,7 @@ export class GameScene extends Phaser.Scene {
   userGroup: Phaser.Physics.Arcade.Group;
   enemyPlayersGroup: Phaser.Physics.Arcade.Group;
 
+  currentPlayerSnake: any;
   currentPlayer: Phaser.Types.Physics.Arcade.ImageWithDynamicBody;
   currentPlayerTail: any; // SnakeInterface; // TODO: add interface again
   remoteRef: Phaser.GameObjects.Rectangle;
@@ -55,12 +52,6 @@ export class GameScene extends Phaser.Scene {
   cursorKeys: Phaser.Types.Input.Keyboard.CursorKeys;
 
   preload() {
-    this.load.image("green_head", greenHead);
-    this.load.image("green_blink", greenHeadBlink);
-    this.load.image("green_xx", greenHeadXX);
-    this.load.image("yellow_head", yellowHead);
-    this.load.image("yellow_blink", yellowHeadBlink);
-    this.load.image("yellow_xx", yellowHeadXX);
     this.cursorKeys = this.input.keyboard.createCursorKeys();
   }
 
@@ -132,6 +123,9 @@ export class GameScene extends Phaser.Scene {
             body.name = "User TailBody " + sessionId;
             this.userGroup.add(body);
           });
+
+          this.currentPlayerSnake = snake;
+          // TODO: get rid of this!
           this.currentPlayer = playerHead;
           this.currentPlayerTail = playerTail;
           this.userGroup.add(this.currentPlayer);
@@ -325,15 +319,15 @@ export class GameScene extends Phaser.Scene {
 
     // Server must handle shiftPosition and collision detection
     if (this.xRequest !== 0) {
-      this.currentPlayer.x = this.horizontalWarp(
-        this.currentPlayer.x + this.xRequest * velocity
+      this.currentPlayerSnake.head.x = this.horizontalWarp(
+        this.currentPlayerSnake.head.x + this.xRequest * velocity
       );
-      this.currentPlayerTail.moveTo(this.currentPlayer.x, this.currentPlayer.y);
+      this.currentPlayerSnake.moveTo(this.currentPlayer.x, this.currentPlayer.y);
     } else if (this.yRequest !== 0) {
-      this.currentPlayer.y = this.verticalWarp(
-        this.currentPlayer.y + this.yRequest * velocity
+      this.currentPlayerSnake.head.y = this.verticalWarp(
+        this.currentPlayerSnake.head.y + this.yRequest * velocity
       );
-      this.currentPlayerTail.moveTo(this.currentPlayer.x, this.currentPlayer.y);
+      this.currentPlayerSnake.moveTo(this.currentPlayer.x, this.currentPlayer.y);
     }
 
     for (let sessionId in this.playerEntities) {
