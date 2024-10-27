@@ -86,7 +86,7 @@ export class GameScene extends Phaser.Scene {
         this
       );
 
-      this.room = await this.client.joinOrCreate("my_room");
+      this.room = await this.client.joinOrCreate("snake_room");
 
       // When Server sends food location and value, add it to the scene
       this.room.state.foodItems.onAdd((item: Food, key: string) => {

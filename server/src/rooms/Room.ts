@@ -6,7 +6,7 @@ import {
   Player,
   Food,
   Circle,
-} from "./schema/MyRoomState";
+} from "./schema/RoomState";
 import { createBodies, shiftPosition } from "./common";
 
 export class MyRoom extends Room<MyRoomState> {
@@ -118,6 +118,7 @@ export class MyRoom extends Room<MyRoomState> {
     player.tailSize = 20;
     player.kills = 0;
     player.alive = true;
+    player.name = "Ronald";
 
     // x/y input requests
     player.xRequest = -1;

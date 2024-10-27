@@ -31,6 +31,7 @@ export class Player extends Schema {
   @type("number") kills: number;
   @type("number") tick: number;
   @type("boolean") alive: boolean;
+  @type("string") name: string;
   bodies: any[] = [];
   @type({ array: Circle }) circles = new ArraySchema<Circle>();
 

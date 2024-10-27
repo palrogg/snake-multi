@@ -5,14 +5,14 @@ import { playground } from "@colyseus/playground";
 /**
  * Import your Room files
  */
-import { MyRoom } from "./rooms/MyRoom";
+import { MyRoom } from "./rooms/Room";
 
 export default config({
   initializeGameServer: (gameServer) => {
     /**
      * Define your room handlers:
      */
-    gameServer.define("my_room", MyRoom);
+    gameServer.define("snake_room", MyRoom);
   },
 
   initializeExpress: (app) => {
