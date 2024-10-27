@@ -109,17 +109,26 @@ export class GameScene extends Phaser.Scene {
           player.y,
           sessionId === this.room.sessionId ? "green_head" : "yellow_head"
         );
-        // TODO: use phaser logic (anims)
-        setInterval(() => {
-          playerHead.setTexture(
-            sessionId === this.room.sessionId ? "green_blink" : "yellow_blink"
-          );
-          setTimeout(() => {
+        this.time.addEvent({
+          delay: 5000,
+          callback: () => {
             playerHead.setTexture(
-              sessionId === this.room.sessionId ? "green_head" : "yellow_head"
+              sessionId === this.room.sessionId ? "green_blink" : "yellow_blink"
             );
-          }, 200);
-        }, 5000);
+            this.time.addEvent({
+              delay: 200,
+              callback: () => {
+                playerHead.setTexture(
+                  sessionId === this.room.sessionId
+                    ? "green_head"
+                    : "yellow_head"
+                );
+              },
+              loop: false,
+            });
+          },
+          loop: true,
+        });
         const playerTail = new Snake(
           this,
           player.x,
