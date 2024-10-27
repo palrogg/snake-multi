@@ -21,7 +21,12 @@ Build client:
   - [ ] Sync available food (for now: not synced with other players than the one who ate it)
 - [ ] Mobile-friendly
   - [ ] Same Phaser config as [Quatre apparts](https://github.com/GameLab-UNIL-EPFL/quatre-apparts-et-un-confinement)?
-  - [ ] Mobile inputs cf. 
+  - [ ] Mobile inputs cf.
 - [ ] Add a leaderboard
+  - [x] React or Phaser? Phaser
+  - [x] LeaderBoard template
+  - [ ] Connect with Player schema
+  - [ ] Sync score updates
+- [ ] Start screen with debug toggle
 - [ ] Make it cleaner and better
   - [ ] New players should not spawn directly in front of existing players
