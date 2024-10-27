@@ -14,3 +14,10 @@ interface Circle {
   x: number;
   y: number;
 }
+
+interface Score {
+  playerName: string;
+  playerId: string;
+  size: number;
+  kills: number;
+}
