@@ -21,3 +21,16 @@ interface Score {
   size: number;
   kills: number;
 }
+
+interface Player {
+  x: number;
+  y: number;
+  xRequest: number;
+  yRequest: number;
+  tailSize: number;
+  kills: number;
+  alive: boolean;
+  name: string;
+  circles: Circle[];
+  onChange: () => any;
+}

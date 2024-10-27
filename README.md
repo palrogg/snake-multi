@@ -30,3 +30,4 @@ Build client:
 - [ ] Start screen with debug toggle
 - [ ] Make it cleaner and better
   - [ ] New players should not spawn directly in front of existing players
+  - [x] Snake class should contain everything snake-related

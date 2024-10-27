@@ -24,7 +24,6 @@ export class GameScene extends Phaser.Scene {
 
   // Players
   playerEntities: { [sessionId: string]: any } = {};
-  playerTails: { [sessionId: string]: any } = {};
 
   // Physics
   foodGroup: Phaser.Physics.Arcade.Group;
@@ -32,7 +31,7 @@ export class GameScene extends Phaser.Scene {
   enemyPlayersGroup: Phaser.Physics.Arcade.Group;
 
   currentPlayer: Phaser.Types.Physics.Arcade.ImageWithDynamicBody;
-  currentPlayerTail: SnakeInterface;
+  currentPlayerTail: any; // SnakeInterface; // TODO: add interface again
   remoteRef: Phaser.GameObjects.Rectangle;
   debugRects: Phaser.GameObjects.Rectangle[];
 
@@ -93,55 +92,31 @@ export class GameScene extends Phaser.Scene {
       this.room.state.foodItems.onAdd((item: Food, key: string) => {
         const color = item.kind === "player-meat" ? 0xfff118 : 0xf0f0f0;
         const food = this.add.circle(item.x, item.y, item.value, color);
-        food.name = key;
+        food.setData("category", "food"); // for overlap detection
+        food.name = key; // keep track of food id for server sync
         this.physics.add.existing(food);
         this.foodGroup.add(food);
       });
 
       // When Server updates player locations, update scene
-      this.room.state.players.onAdd((player, sessionId) => {
+      this.room.state.players.onAdd((player: any, sessionId: string) => {
+        console.log(player, player.name);
         // TODO: add player to Scoreboard
 
-        // TODO: move everything related to snake creation
+        // Work in progress: move everything related to snake creation
         // in snake.ts
-        const playerHead = this.physics.add.image(
-          player.x,
-          player.y,
-          sessionId === this.room.sessionId ? "green_head" : "yellow_head"
-        );
-        this.time.addEvent({
-          delay: 5000,
-          callback: () => {
-            playerHead.setTexture(
-              sessionId === this.room.sessionId ? "green_blink" : "yellow_blink"
-            );
-            this.time.addEvent({
-              delay: 200,
-              callback: () => {
-                playerHead.setTexture(
-                  sessionId === this.room.sessionId
-                    ? "green_head"
-                    : "yellow_head"
-                );
-              },
-              loop: false,
-            });
-          },
-          loop: true,
-        });
-        const playerTail = new Snake(
+        const snake = new Snake(
           this,
           player.x,
           player.y,
+          sessionId,
           sessionId === this.room.sessionId
         );
+        const playerHead = snake.head;
+        const playerTail = snake;
 
-        playerHead.body.onOverlap = true;
-        playerHead.body.collisionCategory = 1;
-        playerHead.depth = 2;
         // keep a reference of it on `playerEntities`
-        this.playerEntities[sessionId] = playerHead;
-        this.playerTails[sessionId] = playerTail;
+        this.playerEntities[sessionId] = snake;
 
         player.onChange(() => {
           playerHead.setData("serverX", player.x);
@@ -151,10 +126,9 @@ export class GameScene extends Phaser.Scene {
         });
 
         if (sessionId === this.room.sessionId) {
-          playerHead.depth = 4;
           playerHead.name = "User Head";
-          playerTail.name = "User Tail";
-          playerTail.bodies.map((body) => {
+          playerTail.tail.name = "User Tail";
+          snake.bodies.map((body) => {
             body.name = "User TailBody " + sessionId;
             this.userGroup.add(body);
           });
@@ -199,9 +173,9 @@ export class GameScene extends Phaser.Scene {
         } else {
           // remote players
           playerHead.name = "Enemy Head " + sessionId;
-          playerTail.name = "Enemy Tail " + sessionId;
+          playerTail.tail.name = "Enemy Tail " + sessionId;
           this.enemyPlayersGroup.add(playerHead);
-          playerTail.bodies.map((body) => {
+          snake.bodies.map((body) => {
             body.name = "Enemy TailBody " + sessionId;
             this.enemyPlayersGroup.add(body);
           });
@@ -210,19 +184,13 @@ export class GameScene extends Phaser.Scene {
 
       // When Players leave the room, clean scene
       this.room.state.players.onRemove((player, sessionId) => {
-        const entity = this.playerEntities[sessionId];
-        if (entity) {
-          entity.destroy();
+        // TODO: enable again
+        const snakeEntity = this.playerEntities[sessionId];
+        if (snakeEntity) {
+          snakeEntity.destroy();
           delete this.playerEntities[sessionId];
         }
-        const entityTail = this.playerTails[sessionId];
-        if (entityTail) {
-          entityTail.bodies.map((body) => {
-            body.destroy();
-          });
-          delete this.playerTails[sessionId];
-        }
-        // TODO: remove from ScoreBoard
+        // TODO: also remove player from ScoreBoard
       });
       this.room.state.foodItems.onRemove((item: Food, key: string) => {
         console.log("Remove food! Key:", key);
@@ -232,8 +200,9 @@ export class GameScene extends Phaser.Scene {
 
       this.physics.world.on("overlap", (object1: any, object2: any) => {
         console.log(`Overlap: “${object1.name}” vs “${object2.name}”`);
+        console.log(object1.data);
 
-        if (object2.name.substring(0, 4) === "food") {
+        if (object2.getData("category") === "food") {
           // Food object
           this.eatRequest = object2.name;
           object2.setAlpha(0);
@@ -368,71 +337,21 @@ export class GameScene extends Phaser.Scene {
     }
 
     for (let sessionId in this.playerEntities) {
-      const entity = this.playerEntities[sessionId];
-      const entityTail = this.playerTails[sessionId];
-      const { serverX, serverY, alive, tailSize } = entity.data.values;
+      const snakeEntity = this.playerEntities[sessionId];
+      const head = snakeEntity.head;
+      const { serverX, serverY, alive, tailSize } =
+        snakeEntity.head.data.values;
 
       if (alive !== true) {
         // Trigger death animations only once
         if (!this.deadPlayers.includes(sessionId)) {
           // If current user
+          snakeEntity.animDie();
           if (sessionId === this.room.sessionId) {
             this.isUserAlive = false;
-            entity.setTexture("green_xx");
             this.xRequest = 0;
             this.yRequest = 0;
-          } else {
-            entity.setTexture("yellow_xx");
           }
-          this.tweens.add({
-            targets: entity,
-            angle: -120,
-            duration: 500,
-            ease: "Power2",
-            yoyo: false,
-            loop: 0,
-            onComplete: () => {
-              this.tweens.add({
-                targets: entityTail.bodies,
-                alpha: 0,
-                duration: 1000,
-                yoyo: false,
-                loop: 0,
-                onComplete: () => {
-                  if (sessionId === this.room.sessionId) {
-                    const text = this.add.text(
-                      400,
-                      300,
-                      "~RERFRESH\nto play again~",
-                      { align: "center" }
-                    );
-                    text.setOrigin(0.5, 0.5);
-                    text.setResolution(window.devicePixelRatio);
-                    text.setFontFamily("Arial");
-                    text.setFontStyle("bold");
-                    text.setFontSize(100);
-                    text.preFX.setPadding(32);
-                    const fx = text.preFX.addShadow(
-                      0,
-                      0,
-                      0.06,
-                      0.75,
-                      0x000000,
-                      4,
-                      0.8
-                    );
-                  }
-                  this.tweens.add({
-                    targets: entity,
-                    alpha: 0,
-                    duration: 1000,
-                    yoyo: false,
-                    loop: 0,
-                  });
-                },
-              });
-            },
-          });
         }
         this.deadPlayers.push(sessionId);
         continue;
@@ -440,14 +359,14 @@ export class GameScene extends Phaser.Scene {
 
       // Make snake grow visually if it ate food,
       // according to server
-      if (tailSize > entityTail.length) {
-        entityTail.growTo(
+      if (tailSize > snakeEntity.length) {
+        snakeEntity.growTo(
           this,
           tailSize,
           0,
           new Phaser.Math.Vector2(
-            entityTail.bodies[entityTail.bodies.length - 1].x,
-            entityTail.bodies[entityTail.bodies.length - 1].y
+            snakeEntity.bodies[snakeEntity.bodies.length - 1].x,
+            snakeEntity.bodies[snakeEntity.bodies.length - 1].y
           )
         );
       }
@@ -456,19 +375,25 @@ export class GameScene extends Phaser.Scene {
       // unless necessary
       if (sessionId === this.room.sessionId) {
         const tolerance = 5;
-        if (Math.abs(entity.x - serverX) > tolerance) {
-          entity.x = this.interpolateIfClose(entity.x, serverX);
+        if (Math.abs(snakeEntity.head.x - serverX) > tolerance) {
+          snakeEntity.head.x = this.interpolateIfClose(
+            snakeEntity.head.x,
+            serverX
+          );
         }
-        if (Math.abs(entity.y - serverY) > tolerance) {
-          entity.y = this.interpolateIfClose(entity.y, serverY);
+        if (Math.abs(snakeEntity.head.y - serverY) > tolerance) {
+          snakeEntity.head.y = this.interpolateIfClose(
+            snakeEntity.head.y,
+            serverY
+          );
         }
         continue;
       }
 
       // 3rd argument: interpolation speed
-      entity.x = this.interpolateIfClose(entity.x, serverX);
-      entity.y = this.interpolateIfClose(entity.y, serverY);
-      this.playerTails[sessionId].moveTo(entity.x, entity.y);
+      snakeEntity.head.x = this.interpolateIfClose(snakeEntity.head.x, serverX);
+      snakeEntity.head.y = this.interpolateIfClose(snakeEntity.head.y, serverY);
+      snakeEntity.tail.moveTo(snakeEntity.head.x, snakeEntity.head.y);
     }
   }
 
