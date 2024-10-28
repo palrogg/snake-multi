@@ -10,11 +10,24 @@ import {
 import { createBodies, shiftPosition } from "./common";
 
 export class MyRoom extends Room<MyRoomState> {
-  maxClients = 4;
+  maxClients = 10;
   foodCount = 0;
   mapWidth = 800;
   mapHeight = 600;
   fixedTimeStep = 1000 / 60;
+  playerIndex = 0;
+  playerNames = [
+    "Ronald",
+    "Ada",
+    "Claude",
+    "Jess",
+    "Niki",
+    "Jessie",
+    "Teddy",
+    "Noobeo",
+    "Elsana",
+    "Potato",
+  ];
   bodies: any[] = [];
   public delayedInterval!: Delayed;
   circles: ArraySchema<Circle>;
@@ -118,7 +131,11 @@ export class MyRoom extends Room<MyRoomState> {
     player.tailSize = 20;
     player.kills = 0;
     player.alive = true;
-    player.name = "Ronald";
+    player.name = this.playerNames[this.playerIndex];
+    this.playerIndex++;
+    if (this.playerIndex > 9) {
+      this.playerIndex = 0;
+    }
 
     // x/y input requests
     player.xRequest = -1;
