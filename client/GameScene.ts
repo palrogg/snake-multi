@@ -20,6 +20,10 @@ export class GameScene extends Phaser.Scene {
 
   // Players
   playerEntities: { [sessionId: string]: any } = {};
+  scoreBoard: any;
+
+  // Food dictionary
+  foodEntities: { [foodId: string]: any } = {};
 
   // Physics
   foodGroup: Phaser.Physics.Arcade.Group;
@@ -87,15 +91,19 @@ export class GameScene extends Phaser.Scene {
         food.name = key; // keep track of food id for server sync
         this.physics.add.existing(food);
         this.foodGroup.add(food);
+        this.foodEntities[key] = food;
       });
 
       // When Server updates player locations, update scene
       this.room.state.players.onAdd((player: any, sessionId: string) => {
-        console.log(player, player.name);
-        // TODO: add player to Scoreboard
+        console.log(player.name, "joined the room.");
 
-        // Work in progress: move everything related to snake creation
-        // in snake.ts
+        // Create Score Board if needed and add new player
+        if (!this.scoreBoard) {
+          this.scoreBoard = new ScoreBoard(this, this.room.sessionId);
+        }
+        this.scoreBoard.addPlayer(player, sessionId);
+
         const snake = new Snake(
           this,
           player.x,
@@ -113,7 +121,10 @@ export class GameScene extends Phaser.Scene {
           playerHead.setData("serverX", player.x);
           playerHead.setData("serverY", player.y);
           playerHead.setData("alive", player.alive);
-          playerHead.setData("tailSize", player.tailSize);
+          if (player.tailSize != playerHead.getData("tailSize")) {
+            this.scoreBoard.updateScore(player, sessionId);
+            playerHead.setData("tailSize", player.tailSize);
+          }
         });
 
         if (sessionId === this.room.sessionId) {
@@ -131,6 +142,7 @@ export class GameScene extends Phaser.Scene {
           this.userGroup.add(this.currentPlayer);
 
           // Show current server position for debug
+          // TODO: refactor the following 20 lines
           this.remoteRef = this.add.rectangle(
             0,
             0,
@@ -147,6 +159,7 @@ export class GameScene extends Phaser.Scene {
             rect.depth = 5;
             return rect;
           });
+
           player.onChange(() => {
             // Add new debug rects if needed
             if (player.circles.length > this.debugRects.length) {
@@ -184,17 +197,29 @@ export class GameScene extends Phaser.Scene {
           snakeEntity.destroy();
           delete this.playerEntities[sessionId];
         }
+        if (sessionId === this.room.sessionId) {
+          this.remoteRef.destroy();
+          this.debugRects.map((r) => r.destroy());
+        }
         // TODO: also remove player from ScoreBoard
+        this.scoreBoard.removePlayer(sessionId);
       });
+
       this.room.state.foodItems.onRemove((item: Food, key: string) => {
         console.log("Remove food! Key:", key);
+        const foodEntity = this.foodEntities[key];
+        if (foodEntity) {
+          foodEntity.destroy();
+          delete this.foodEntities[key];
+        }
       });
+
       this.physics.add.overlap(this.userGroup, this.foodGroup);
       this.physics.add.overlap(this.userGroup, this.enemyPlayersGroup);
 
       this.physics.world.on("overlap", (object1: any, object2: any) => {
-        console.log(`Overlap: “${object1.name}” vs “${object2.name}”`);
-        console.log(object1.data);
+        // console.log(`Overlap: “${object1.name}” vs “${object2.name}”`);
+        // console.log(object1.data);
 
         if (object2.getData("category") === "food") {
           // Food object
@@ -204,39 +229,25 @@ export class GameScene extends Phaser.Scene {
           // the overlap won't be triggered anymore
           this.foodGroup.remove(object2);
         } else {
-          // “Good” Kill: only in following case
-          // Overlap: “User TailBody ZvqQvrtow” vs “Enemy Head oaAYhkXZ7”
           if (
-            object1.name.substring(0, 9) === "User Tail" &&
-            object2.name.substring(0, 10) === "Enemy Head"
+            object1.getData("category") === "tail" &&
+            object2.getData("category") === "head"
           ) {
-            this.killRequest = object2.name.split(" ")[2];
-            this.enemyPlayersGroup.remove(object2);
-          } else if (
-            object1.name.substring(0, 9) === "User Head" &&
-            object2.name.substring(0, 10) === "Enemy Head"
-          ) {
-            // Both will die
-            this.killRequest = object2.name.split(" ")[2];
+            const targetUserId = object2.getData("userId");
+            if (Object.keys(this.playerEntities).includes(targetUserId)) {
+              if (!this.playerEntities[targetUserId].killRequested === true) {
+                console.log("Flag user: killRequested", targetUserId);
+                this.playerEntities[targetUserId].markForKill();
+                console.log(this.playerEntities[targetUserId]);
+                // Send kill request to server
+                this.killRequest = object2.getData("userId");
+              } else {
+                console.log("player already flagged");
+              }
+            }
           }
-          this.enemyPlayersGroup.remove(object2);
         }
       });
-
-      // Work in progress ScoreBoard
-      const scoreBoard = new ScoreBoard(
-        this,
-        [
-          { playerName: "Ronald", playerId: "string", size: 123, kills: 23 },
-          {
-            playerName: "Jake",
-            playerId: "sdfldsfkj",
-            size: 1222233,
-            kills: 223,
-          },
-        ],
-        "this.currentPlayer"
-      );
     } catch (e) {
       console.error(e);
     }
@@ -289,7 +300,7 @@ export class GameScene extends Phaser.Scene {
       this.inputPayload.up = this.cursorKeys.up.isDown;
       this.inputPayload.down = this.cursorKeys.down.isDown;
       if (this.eatRequest !== null) {
-        console.log("We send an “eatRequest” for", this.eatRequest);
+        // console.log("We send an “eatRequest” for", this.eatRequest);
         this.inputPayload.eatRequest = this.eatRequest;
         this.eatRequest = null;
       }
@@ -322,12 +333,18 @@ export class GameScene extends Phaser.Scene {
       this.currentPlayerSnake.head.x = this.horizontalWarp(
         this.currentPlayerSnake.head.x + this.xRequest * velocity
       );
-      this.currentPlayerSnake.moveTo(this.currentPlayer.x, this.currentPlayer.y);
+      this.currentPlayerSnake.moveTo(
+        this.currentPlayer.x,
+        this.currentPlayer.y
+      );
     } else if (this.yRequest !== 0) {
       this.currentPlayerSnake.head.y = this.verticalWarp(
         this.currentPlayerSnake.head.y + this.yRequest * velocity
       );
-      this.currentPlayerSnake.moveTo(this.currentPlayer.x, this.currentPlayer.y);
+      this.currentPlayerSnake.moveTo(
+        this.currentPlayer.x,
+        this.currentPlayer.y
+      );
     }
 
     for (let sessionId in this.playerEntities) {
@@ -387,7 +404,7 @@ export class GameScene extends Phaser.Scene {
       // 3rd argument: interpolation speed
       snakeEntity.head.x = this.interpolateIfClose(snakeEntity.head.x, serverX);
       snakeEntity.head.y = this.interpolateIfClose(snakeEntity.head.y, serverY);
-      snakeEntity.tail.moveTo(snakeEntity.head.x, snakeEntity.head.y);
+      snakeEntity.moveTo(snakeEntity.head.x, snakeEntity.head.y);
     }
   }
 
