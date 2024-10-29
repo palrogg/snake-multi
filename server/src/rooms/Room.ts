@@ -165,6 +165,18 @@ export class MyRoom extends Room<MyRoomState> {
     //     thePlayer.x = 200;
     //   }
     // }, 1000);
+
+    // Check grown tail more easily
+    // setTimeout(() => {
+    //   const player = this.state.players.get(client.sessionId);
+    //   if (player) {
+    //     player.tailSize += 100;
+    //     const lastBody = player.bodies[player.bodies.length - 1];
+    //     console.log(lastBody);
+    //     const newBodies = createBodies(lastBody.x, lastBody.y, 0, 100);
+    //     player.bodies = player.bodies.concat(newBodies);
+    //   }
+    // }, 1000);
   }
 
   onLeave(client: Client, consented: boolean) {
