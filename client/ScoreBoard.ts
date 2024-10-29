@@ -52,7 +52,6 @@ export class ScoreBoard {
   }
 
   sortPlayers(force = false) {
-    console.log("Scores before", this.scores);
     const sorted = [...this.scores].sort((a: Score, b: Score) => {
       return b.size - a.size;
     });
@@ -71,7 +70,6 @@ export class ScoreBoard {
         });
       }
     });
-    console.log("Scores after", sorted);
   }
 
   addPlayer(player: any, sessionId: string) {
@@ -99,7 +97,6 @@ export class ScoreBoard {
   }
 
   updateScore(player: any, sessionId: string) {
-    console.log("Update!");
     const playerIndex = this.scores.findIndex(
       (score) => score.playerId === sessionId
     );
@@ -115,35 +112,3 @@ export class ScoreBoard {
     this.sortPlayers();
   }
 }
-
-// for (let playerId in players) {
-//   console.log(playerId);
-// }
-
-// scores.sort((a: Score, b: Score) => {
-//   return b.size - a.size;
-// });
-// scores.forEach((score, index) => {
-//   scene.make.text({
-//     x: x,
-//     y: this.margin + index * this.lineHeight,
-//     text: score.playerName,
-//     origin: 0,
-//     style: {
-//       font: "14px Arial",
-//       color: "yellow",
-//       wordWrap: { width: colWidths[0] },
-//     },
-//   });
-//   scene.make.text({
-//     x: x + this.margin + colWidths[0],
-//     y: this.margin + index * this.lineHeight,
-//     text: score.size.toString(),
-//     origin: { x: 1, y: 0 },
-//     style: {
-//       font: "14px Arial",
-//       color: "yellow",
-//       wordWrap: { width: colWidths[1] },
-//     },
-//   });
-// });

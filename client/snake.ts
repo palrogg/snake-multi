@@ -1,10 +1,5 @@
 import Phaser from "phaser";
 
-export interface SnakeInterface extends Phaser.GameObjects.Group {
-  moveTo(x: number, y: number): void;
-  bodies: any[];
-}
-
 export class Snake {
   length: number = 0;
   spacing: number;
@@ -115,7 +110,8 @@ export class Snake {
     scene: Phaser.Scene,
     targetLength: number,
     spacing: number,
-    origin: Phaser.Math.Vector2
+    origin: Phaser.Math.Vector2,
+    physicsGroup: Phaser.Physics.Arcade.Group | null = null
   ) {
     const limit = targetLength - this.length;
     for (let i = 0; i < limit; i++) {
@@ -131,6 +127,9 @@ export class Snake {
       scene.physics.add.existing(body);
       this.tail.add(body);
       this.bodies.push(body);
+      if (physicsGroup) {
+        physicsGroup.add(body);
+      }
     }
     this.length = this.bodies.length;
   }

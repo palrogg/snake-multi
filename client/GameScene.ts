@@ -1,6 +1,6 @@
 import Phaser from "phaser";
 import { Client, Room } from "colyseus.js";
-import { Snake, SnakeInterface } from "./snake";
+import { Snake } from "./snake";
 import { ScoreBoard } from "./ScoreBoard";
 
 export class GameScene extends Phaser.Scene {
@@ -32,7 +32,7 @@ export class GameScene extends Phaser.Scene {
 
   currentPlayerSnake: any;
   currentPlayer: Phaser.Types.Physics.Arcade.ImageWithDynamicBody;
-  currentPlayerTail: any; // SnakeInterface; // TODO: add interface again
+  currentsnake: Snake;
   remoteRef: Phaser.GameObjects.Rectangle;
   debugRects: Phaser.GameObjects.Rectangle[];
 
@@ -104,6 +104,7 @@ export class GameScene extends Phaser.Scene {
         }
         this.scoreBoard.addPlayer(player, sessionId);
 
+        // Create snake entity for the new player
         const snake = new Snake(
           this,
           player.x,
@@ -111,34 +112,29 @@ export class GameScene extends Phaser.Scene {
           sessionId,
           sessionId === this.room.sessionId
         );
-        const playerHead = snake.head;
-        const playerTail = snake;
 
-        // keep a reference of it on `playerEntities`
+        // keep a reference of it on "playerEntities"
         this.playerEntities[sessionId] = snake;
 
         player.onChange(() => {
-          playerHead.setData("serverX", player.x);
-          playerHead.setData("serverY", player.y);
-          playerHead.setData("alive", player.alive);
-          if (player.tailSize != playerHead.getData("tailSize")) {
+          snake.head.setData("serverX", player.x);
+          snake.head.setData("serverY", player.y);
+          snake.head.setData("alive", player.alive);
+          if (player.tailSize != snake.head.getData("tailSize")) {
             this.scoreBoard.updateScore(player, sessionId);
-            playerHead.setData("tailSize", player.tailSize);
+            snake.head.setData("tailSize", player.tailSize);
           }
         });
 
+        // If snake is current player
         if (sessionId === this.room.sessionId) {
-          playerHead.name = "User Head";
-          playerTail.tail.name = "User Tail";
           snake.bodies.map((body) => {
-            body.name = "User TailBody " + sessionId;
             this.userGroup.add(body);
           });
 
           this.currentPlayerSnake = snake;
-          // TODO: get rid of this!
-          this.currentPlayer = playerHead;
-          this.currentPlayerTail = playerTail;
+          this.currentPlayer = snake.head;
+          this.currentsnake = snake;
           this.userGroup.add(this.currentPlayer);
 
           // Show current server position for debug
@@ -146,8 +142,8 @@ export class GameScene extends Phaser.Scene {
           this.remoteRef = this.add.rectangle(
             0,
             0,
-            playerHead.width,
-            playerHead.height
+            snake.head.width,
+            snake.head.height
           );
           this.remoteRef.setStrokeStyle(1, 0xff0000);
           player.onChange(() => {
@@ -179,11 +175,8 @@ export class GameScene extends Phaser.Scene {
           });
         } else {
           // remote players
-          playerHead.name = "Enemy Head " + sessionId;
-          playerTail.tail.name = "Enemy Tail " + sessionId;
-          this.enemyPlayersGroup.add(playerHead);
+          this.enemyPlayersGroup.add(snake.head);
           snake.bodies.map((body) => {
-            body.name = "Enemy TailBody " + sessionId;
             this.enemyPlayersGroup.add(body);
           });
         }
@@ -191,22 +184,23 @@ export class GameScene extends Phaser.Scene {
 
       // When Players leave the room, clean scene
       this.room.state.players.onRemove((player, sessionId) => {
-        // TODO: enable again
         const snakeEntity = this.playerEntities[sessionId];
         if (snakeEntity) {
+          this.userGroup.remove(snakeEntity.head);
           snakeEntity.destroy();
           delete this.playerEntities[sessionId];
         }
         if (sessionId === this.room.sessionId) {
+          console.warn("destroy !!!");
           this.remoteRef.destroy();
           this.debugRects.map((r) => r.destroy());
         }
-        // TODO: also remove player from ScoreBoard
+        // Remove player from the Score Board
         this.scoreBoard.removePlayer(sessionId);
       });
 
       this.room.state.foodItems.onRemove((item: Food, key: string) => {
-        console.log("Remove food! Key:", key);
+        // Sync removed food from server, using dictionary key
         const foodEntity = this.foodEntities[key];
         if (foodEntity) {
           foodEntity.destroy();
@@ -218,9 +212,6 @@ export class GameScene extends Phaser.Scene {
       this.physics.add.overlap(this.userGroup, this.enemyPlayersGroup);
 
       this.physics.world.on("overlap", (object1: any, object2: any) => {
-        // console.log(`Overlap: “${object1.name}” vs “${object2.name}”`);
-        // console.log(object1.data);
-
         if (object2.getData("category") === "food") {
           // Food object
           this.eatRequest = object2.name;
@@ -291,9 +282,10 @@ export class GameScene extends Phaser.Scene {
     /**
      * Fixed update function
      */
-    const velocity = 2; // Warning: this value also changes the tail spacing for now!
-    // send input to the server
 
+    const velocity = 2; // This value also impacts tail spacing for now
+
+    // Send input to the server
     if (this.isUserAlive) {
       this.inputPayload.left = this.cursorKeys.left.isDown;
       this.inputPayload.right = this.cursorKeys.right.isDown;
@@ -358,6 +350,7 @@ export class GameScene extends Phaser.Scene {
         if (!this.deadPlayers.includes(sessionId)) {
           // If current user
           snakeEntity.animDie();
+          this.enemyPlayersGroup.remove(snakeEntity.head);
           if (sessionId === this.room.sessionId) {
             this.isUserAlive = false;
             this.xRequest = 0;
@@ -378,7 +371,10 @@ export class GameScene extends Phaser.Scene {
           new Phaser.Math.Vector2(
             snakeEntity.bodies[snakeEntity.bodies.length - 1].x,
             snakeEntity.bodies[snakeEntity.bodies.length - 1].y
-          )
+          ),
+          sessionId === this.room.sessionId
+            ? this.userGroup
+            : this.enemyPlayersGroup
         );
       }
 
