@@ -12,9 +12,11 @@ export class Snake {
   head: Phaser.Types.Physics.Arcade.ImageWithDynamicBody;
   tail: Phaser.GameObjects.Group;
   bodies: any[];
+  userId: string;
   isUser: boolean;
   currentScene: Phaser.Scene;
   blinkTimer: any;
+  killRequested = false;
 
   constructor(
     scene: Phaser.Scene,
@@ -31,6 +33,7 @@ export class Snake {
     this.radius = radius;
     this.spacing = spacing;
     this.currentScene = scene;
+    this.userId = sessionId;
 
     // Create the snake head
     this.head = scene.physics.add
@@ -123,13 +126,19 @@ export class Snake {
         this.isUser ? 0x41c000 : 0xfff118
       );
       body.depth = this.isUser ? 3 : 1;
+      body.setData("category", "tail");
+      body.setData("userId", this.userId);
       scene.physics.add.existing(body);
       this.tail.add(body);
       this.bodies.push(body);
     }
     this.length = this.bodies.length;
   }
-  
+
+  markForKill() {
+    this.killRequested = true;
+  }
+
   destroy() {
     console.log("Destroy entity!!");
     this.stopBlink();
