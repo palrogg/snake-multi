@@ -7,7 +7,7 @@ export function createBodies(
   const newBodies = [];
   x += spacing; // here we can add initial spacing, BUT
   for (let i = 0; i < count; i++) {
-    newBodies.push([x, y]);
+    newBodies.push({ x: x, y: y });
     x += spacing;
   }
   return newBodies;

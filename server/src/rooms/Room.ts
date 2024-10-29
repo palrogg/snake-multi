@@ -67,8 +67,7 @@ export class MyRoom extends Room<MyRoomState> {
     xTolerance = 50,
     yTolerance = 50
   ) {
-    // TODO: check overlap
-    console.log(`Validating overlap: (${x1}, ${y1}) vs (${x2}, ${y2})`);
+    // console.log(`Validating overlap: (${x1}, ${y1}) vs (${x2}, ${y2})`);
     const xDistance = Math.abs(x2 - x1);
     const yDistance = Math.abs(y2 - y1);
     return xDistance < xTolerance && yDistance < yTolerance;
@@ -149,7 +148,7 @@ export class MyRoom extends Room<MyRoomState> {
     player.bodies = createBodies(player.x, player.y, spacing, length);
     const collection = new ArraySchema<Circle>();
     player.bodies.forEach((body, i) => {
-      collection.push(new Circle({ x: body[0], y: body[1] }));
+      collection.push(new Circle({ x: body.x, y: body.y }));
     });
     player.circles = collection;
 
@@ -220,7 +219,7 @@ export class MyRoom extends Room<MyRoomState> {
           console.log("Eat request:", input.eatRequest);
           const targetFood = this.state.foodItems.get(input.eatRequest);
           if (targetFood) {
-            // TODO: apply server check
+            // Server validation
             const validOverlap = this.validateOverlap(
               player.x,
               player.y,
@@ -232,6 +231,7 @@ export class MyRoom extends Room<MyRoomState> {
               // Make player grow
               player.tailSize += targetFood.value;
               const lastBody = player.bodies[player.bodies.length - 1];
+              console.log(lastBody);
               const newBodies = createBodies(
                 lastBody.x,
                 lastBody.y,
@@ -245,7 +245,8 @@ export class MyRoom extends Room<MyRoomState> {
               if (this.debug === true) {
                 const c = new ArraySchema<Circle>();
                 player.bodies.forEach((body, i) => {
-                  c.push(new Circle({ x: body[0], y: body[1] }));
+                  console.log("Body position:", body);
+                  c.push(new Circle({ x: body.x, y: body.y }));
                 });
                 player.circles = c;
               }
@@ -257,36 +258,45 @@ export class MyRoom extends Room<MyRoomState> {
         }
         if (input.killRequest) {
           console.log("KILL request:", input.killRequest);
-          const targetEnemy = this.state.players.get(input.killRequest);
-          if (targetEnemy) {
-            // TODO: applly server check
-            const validOverlap = this.validateOverlap(
-              player.x,
-              player.y,
-              targetEnemy.x,
-              targetEnemy.y
-            );
-            console.log(
-              "Kill Overlap validity -- not ready yet, need to take tail into account:",
-              validOverlap
-            );
-            // Flag enemy player as dead
-            targetEnemy.alive = false;
-            // And turn him into meat
-            this.addSnakeMeat(targetEnemy);
+          if (player.alive !== true) {
+            console.log("Requesting player is already dead.");
           } else {
-            console.warn("Target food “", input.eatRequest, "” not found!");
+            const targetEnemy = this.state.players.get(input.killRequest);
+            if (targetEnemy) {
+              // Server validation: player head and tail
+              const validOverlap = player.bodies
+                .map((body) =>
+                  this.validateOverlap(
+                    body.x,
+                    body.y,
+                    targetEnemy.x,
+                    targetEnemy.y
+                  )
+                )
+                .some((result: boolean) => result === true);
+              console.log("Kill Overlap validity:", validOverlap);
+              if (validOverlap) {
+                // Flag enemy player as dead
+                targetEnemy.alive = false;
+                // And turn him into meat
+                this.addSnakeMeat(targetEnemy);
+              }
+            } else {
+              console.warn("Target enemy “", input.eatRequest, "” not found!");
+            }
           }
         }
         player.tick = input.tick;
       }
-      player.x = this.horizontalWarp(player.x + player.xRequest * velocity);
-      player.y = this.verticalWarp(player.y + player.yRequest * velocity);
-      shiftPosition(player.bodies, player.x, player.y, 1);
-      if (this.debug === true) {
-        for (let i = 0; i < player.circles.length; i++) {
-          player.circles[i].x = player.bodies[i].x;
-          player.circles[i].y = player.bodies[i].y;
+      if (player.alive === true) {
+        player.x = this.horizontalWarp(player.x + player.xRequest * velocity);
+        player.y = this.verticalWarp(player.y + player.yRequest * velocity);
+        shiftPosition(player.bodies, player.x, player.y, 1);
+        if (this.debug === true) {
+          for (let i = 0; i < player.circles.length; i++) {
+            player.circles[i].x = player.bodies[i].x;
+            player.circles[i].y = player.bodies[i].y;
+          }
         }
       }
     });

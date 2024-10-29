@@ -1,4 +1,10 @@
-import { Schema, ArraySchema, MapSchema, Context, type } from "@colyseus/schema";
+import {
+  Schema,
+  ArraySchema,
+  MapSchema,
+  Context,
+  type,
+} from "@colyseus/schema";
 
 export interface InputData {
   left: false;
