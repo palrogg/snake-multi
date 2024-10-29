@@ -40,7 +40,6 @@ export class Player extends Schema {
   @type("string") name: string;
   bodies: any[] = [];
   @type({ array: Circle }) circles = new ArraySchema<Circle>();
-
   inputQueue: any[] = [];
 }
 
