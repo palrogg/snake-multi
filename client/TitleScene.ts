@@ -54,6 +54,13 @@ export class TitleScene extends Phaser.Scene {
       scene.scene.start("GameScene");
     });
 
+    // Speed up local debug
+    if (window.location.hostname === "localhost") {
+      setTimeout(() => {
+        scene.scene.start("GameScene");
+      });
+    }
+
     this.input.keyboard.on(
       "keydown",
       function (e: any) {
