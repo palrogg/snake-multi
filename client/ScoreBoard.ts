@@ -11,7 +11,8 @@ export class ScoreBoard {
   lineHeight = 20;
   margin = 20;
   leftColTexts: {} = {};
-  rightColTexts: {} = {};
+  playerEntities: { [key: string]: any } = {};
+  rightColTexts: { [key: string]: any } = {};
 
   constructor(scene: Phaser.Scene, currentPlayer: string) {
     this.scene = scene;
@@ -113,5 +114,14 @@ export class ScoreBoard {
     // Check if order will change
     // Animate if players go up or down
     this.sortPlayers();
+  }
+
+  destroy() {
+    Object.values(this.leftColTexts).map((t: Phaser.GameObjects.Text) =>
+      t.destroy()
+    );
+    Object.values(this.rightColTexts).map((t: Phaser.GameObjects.Text) =>
+      t.destroy()
+    );
   }
 }
