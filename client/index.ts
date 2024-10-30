@@ -1,4 +1,5 @@
 import Phaser from "phaser";
+import CheckboxPlugin from "./plugins/checkbox-plugin";
 import { TitleScene } from "./TitleScene";
 import { GameScene } from "./GameScene";
 
@@ -16,6 +17,16 @@ const config: Phaser.Types.Core.GameConfig = {
   },
   pixelArt: true,
   scene: [TitleScene, GameScene],
+
+  plugins: {
+    global: [
+      {
+        key: "CheckboxPlugin",
+        plugin: CheckboxPlugin,
+        start: true,
+      },
+    ],
+  },
 };
 
 // instantiate the game

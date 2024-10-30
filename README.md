@@ -17,17 +17,17 @@ Build client:
 - [x] Make snakes grow when they eat
 - [x] Create death sequence
 - [ ] Fine-tune server-client sync
-  - [ ] Server validation should take snake tails into account
-  - [ ] Sync available food (for now: not synced with other players than the one who ate it)
+  - [x] Server validation should take snake tails into account
+  - [x] Sync available food (for now: not synced with other players than the one who ate it)
 - [ ] Mobile-friendly
   - [ ] Same Phaser config as [Quatre apparts](https://github.com/GameLab-UNIL-EPFL/quatre-apparts-et-un-confinement)?
   - [ ] Mobile inputs cf.
-- [ ] Add a leaderboard
+- [x] Add a leaderboard
   - [x] React or Phaser? Phaser
   - [x] LeaderBoard template
-  - [ ] Connect with Player schema
-  - [ ] Sync score updates
-- [ ] Start screen with debug toggle
+  - [x] Connect with Player schema
+  - [x] Sync score updates
+- [x] Start screen with debug toggle
 - [ ] Make it cleaner and better
   - [ ] New players should not spawn directly in front of existing players
   - [x] Snake class should contain everything snake-related

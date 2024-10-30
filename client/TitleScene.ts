@@ -1,5 +1,5 @@
 import Phaser from "phaser";
-import { Snake, SnakeInterface } from "./snake";
+import { Snake } from "./snake";
 
 // Sprites
 import title from "./assets/img/title.png";
@@ -21,6 +21,7 @@ export class TitleScene extends Phaser.Scene {
   evilSnake: any;
   dumbSnakes = new Map();
   dumbSnakesGroup: Phaser.Physics.Arcade.Group;
+  debug = true;
 
   preload() {
     this.load.image("title", title);
@@ -33,6 +34,30 @@ export class TitleScene extends Phaser.Scene {
   }
 
   create() {
+    const debugCheckbox = this.add // @ts-ignore because checkbox plugin is not typed
+      .rexCheckbox(
+        this.sys.game.canvas.width * 0.5 - 120,
+        this.sys.game.canvas.height * 0.75,
+        30,
+        30,
+        {
+          color: 0x005cb2,
+          checked: true,
+        }
+      )
+      .setDepth(10);
+
+    this.make.text({
+      x: this.sys.game.canvas.width * 0.5,
+      y: this.sys.game.canvas.height * 0.75,
+      depth: 10,
+      text: "Debug: show server sync",
+      origin: 0.5,
+      style: {
+        font: "18px Arial",
+      },
+    });
+
     let title = this.add
       .sprite(400, 300, "title")
       .setDepth(10)
@@ -51,7 +76,9 @@ export class TitleScene extends Phaser.Scene {
     let scene = this;
 
     title.on("pointerdown", function () {
-      scene.scene.start("GameScene");
+      scene.scene.start("GameScene", {
+        debug: debugCheckbox.checked,
+      });
     });
 
     // Speed up local debug
