@@ -22,6 +22,7 @@ export class TitleScene extends Phaser.Scene {
   dumbSnakes = new Map();
   dumbSnakesGroup: Phaser.Physics.Arcade.Group;
   debug = true;
+  playAgain = false;
 
   preload() {
     this.load.image("title", title);
@@ -33,7 +34,25 @@ export class TitleScene extends Phaser.Scene {
     this.load.image("yellow_xx", yellowHeadXX);
   }
 
-  create() {
+  create(data: { playAgain: boolean }) {
+    this.playAgain = data.playAgain;
+
+    // Animated title sprite
+    let title = this.add
+      .sprite(400, 300, "title")
+      .setDepth(10)
+      .setAngle(-5)
+      .setInteractive();
+
+    this.tweens.add({
+      targets: title,
+      angle: 10,
+      duration: 800,
+      ease: "Power2",
+      yoyo: true,
+      loop: -1,
+    });
+
     const debugCheckbox = this.add // @ts-ignore because checkbox plugin is not typed
       .rexCheckbox(
         this.sys.game.canvas.width * 0.5 - 120,
@@ -58,34 +77,21 @@ export class TitleScene extends Phaser.Scene {
       },
     });
 
-    let title = this.add
-      .sprite(400, 300, "title")
-      .setDepth(10)
-      .setAngle(-5)
-      .setInteractive();
-
-    this.tweens.add({
-      targets: title,
-      angle: 10,
-      duration: 800,
-      ease: "Power2",
-      yoyo: true,
-      loop: -1,
-    });
-
     let scene = this;
-
+    const playAgain = this.playAgain;
+    console.log('again = ', playAgain)
     title.on("pointerdown", function () {
       scene.scene.start("GameScene", {
         debug: debugCheckbox.checked,
+        playAgain: playAgain,
       });
     });
 
     // Speed up local debug
     if (window.location.hostname === "localhost") {
-      setTimeout(() => {
-        scene.scene.start("GameScene");
-      });
+      // setTimeout(() => {
+      //   scene.scene.start("GameScene");
+      // });
     }
 
     this.input.keyboard.on(

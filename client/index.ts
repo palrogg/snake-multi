@@ -2,6 +2,7 @@ import Phaser from "phaser";
 import CheckboxPlugin from "./plugins/checkbox-plugin";
 import { TitleScene } from "./TitleScene";
 import { GameScene } from "./GameScene";
+import { GameOver } from "./GameOver";
 
 const config: Phaser.Types.Core.GameConfig = {
   type: Phaser.AUTO,
@@ -16,7 +17,7 @@ const config: Phaser.Types.Core.GameConfig = {
     },
   },
   pixelArt: true,
-  scene: [TitleScene, GameScene],
+  scene: [TitleScene, GameScene, GameOver],
 
   plugins: {
     global: [

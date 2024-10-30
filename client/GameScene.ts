@@ -31,8 +31,6 @@ export class GameScene extends Phaser.Scene {
   enemyPlayersGroup: Phaser.Physics.Arcade.Group;
 
   currentPlayerSnake: any;
-  currentPlayer: Phaser.Types.Physics.Arcade.ImageWithDynamicBody;
-  currentsnake: Snake;
   remoteRef: Phaser.GameObjects.Rectangle;
   debugRects: Phaser.GameObjects.Rectangle[];
 
@@ -59,10 +57,17 @@ export class GameScene extends Phaser.Scene {
     this.cursorKeys = this.input.keyboard.createCursorKeys();
   }
 
-  async create(data: { debug: boolean }) {
+  async create(data: { debug: boolean; playAgain: boolean }) {
     console.log("Joining room...");
 
     this.debug = data.debug;
+    if (data.playAgain) {
+      console.warn("Player plays again. Reset RESET!");
+      this.xRequest = -1;
+      this.yRequest = 0;
+      this.isUserAlive = true;
+      this.playerEntities = {};
+    }
 
     try {
       // Physics group for edible stuff
@@ -98,7 +103,7 @@ export class GameScene extends Phaser.Scene {
 
       // When Server updates player locations, update scene
       this.room.state.players.onAdd((player: any, sessionId: string) => {
-        console.log(player.name, "joined the room.");
+        console.log(player.name, "joined the room. ID =", sessionId);
 
         // Create Score Board if needed and add new player
         if (!this.scoreBoard) {
@@ -135,9 +140,7 @@ export class GameScene extends Phaser.Scene {
           });
 
           this.currentPlayerSnake = snake;
-          this.currentPlayer = snake.head;
-          this.currentsnake = snake;
-          this.userGroup.add(this.currentPlayer);
+          this.userGroup.add(this.currentPlayerSnake.head);
 
           // Show current server position for debug
           // TODO: refactor the following 20 lines
@@ -330,35 +333,44 @@ export class GameScene extends Phaser.Scene {
         this.currentPlayerSnake.head.x + this.xRequest * velocity
       );
       this.currentPlayerSnake.moveTo(
-        this.currentPlayer.x,
-        this.currentPlayer.y
+        this.currentPlayerSnake.head.x,
+        this.currentPlayerSnake.head.y
       );
     } else if (this.yRequest !== 0) {
       this.currentPlayerSnake.head.y = this.verticalWarp(
         this.currentPlayerSnake.head.y + this.yRequest * velocity
       );
       this.currentPlayerSnake.moveTo(
-        this.currentPlayer.x,
-        this.currentPlayer.y
+        this.currentPlayerSnake.head.x,
+        this.currentPlayerSnake.head.y
       );
     }
 
     for (let sessionId in this.playerEntities) {
       const snakeEntity = this.playerEntities[sessionId];
-      const head = snakeEntity.head;
+      if (!snakeEntity?.head?.data?.values) {
+        // create it again?
+        console.warn("continue");
+        continue;
+      }
       const { serverX, serverY, alive, tailSize } =
         snakeEntity.head.data.values;
 
       if (alive !== true) {
         // Trigger death animations only once
         if (!this.deadPlayers.includes(sessionId)) {
-          // If current user
           snakeEntity.animDie();
           this.enemyPlayersGroup.remove(snakeEntity.head);
+
+          // If current user
           if (sessionId === this.room.sessionId) {
             this.isUserAlive = false;
             this.xRequest = 0;
             this.yRequest = 0;
+            this.scoreBoard.destroy();
+            this.room.leave();
+            this.scene.stop();
+            this.scene.start("GameOver");
           }
         }
         this.deadPlayers.push(sessionId);
@@ -413,7 +425,7 @@ export class GameScene extends Phaser.Scene {
 
   update(time: number, delta: number): void {
     // skip loop if not connected yet.
-    if (!this.currentPlayer) {
+    if (!this.currentPlayerSnake) {
       return;
     }
 
