@@ -52,6 +52,9 @@ export class ScoreBoard {
   }
 
   sortPlayers(force = false) {
+    if (this.scores.length === 0) {
+      return;
+    }
     const sorted = [...this.scores].sort((a: Score, b: Score) => {
       return b.size - a.size;
     });
