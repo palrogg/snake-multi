@@ -79,7 +79,7 @@ export class TitleScene extends Phaser.Scene {
 
     let scene = this;
     const playAgain = this.playAgain;
-    console.log('again = ', playAgain)
+    console.log("again = ", playAgain);
     title.on("pointerdown", function () {
       scene.scene.start("GameScene", {
         debug: debugCheckbox.checked,
@@ -97,7 +97,10 @@ export class TitleScene extends Phaser.Scene {
     this.input.keyboard.on(
       "keydown",
       function (e: any) {
-        scene.scene.start("GameScene");
+        scene.scene.start("GameScene", {
+          debug: debugCheckbox.checked,
+          playAgain: playAgain,
+        });
       },
       1000
     );
