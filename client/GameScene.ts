@@ -215,18 +215,25 @@ export class GameScene extends Phaser.Scene {
         }
       });
 
-      this.physics.add.overlap(this.userGroup, this.foodGroup);
-      this.physics.add.overlap(this.userGroup, this.enemyPlayersGroup);
-
-      this.physics.world.on("overlap", (object1: any, object2: any) => {
-        if (object2.getData("category") === "food") {
-          // Food object
-          this.eatRequest = object2.name;
-          object2.setAlpha(0);
-          // Remove object from its physics group, so
-          // the overlap won't be triggered anymore
-          this.foodGroup.remove(object2);
-        } else {
+      this.physics.add.overlap(
+        this.userGroup,
+        this.foodGroup,
+        (object1: any, object2: any) => {
+          if (object2.getData("category") === "food") {
+            // Food object
+            this.eatRequest = object2.name;
+            object2.setAlpha(0);
+            // Remove object from its physics group, so
+            // the overlap won't be triggered anymore
+            this.foodGroup.remove(object2);
+          }
+        }
+      );
+      this.physics.add.collider(
+        this.userGroup,
+        this.enemyPlayersGroup,
+        (object1: any, object2: any) => {
+          console.warn("collide...");
           if (
             object1.getData("category") === "tail" &&
             object2.getData("category") === "head"
@@ -245,7 +252,7 @@ export class GameScene extends Phaser.Scene {
             }
           }
         }
-      });
+      );
     } catch (e) {
       console.error(e);
     }
@@ -367,10 +374,17 @@ export class GameScene extends Phaser.Scene {
             this.isUserAlive = false;
             this.xRequest = 0;
             this.yRequest = 0;
-            this.scoreBoard.destroy();
-            this.room.leave();
-            this.scene.stop();
-            this.scene.start("GameOver");
+            // this.scoreBoard.destroy();
+
+            this.time.addEvent({
+              delay: 1000,
+              callback: () => {
+                // this.scene.stop();
+                this.room.leave();
+                this.scene.start("GameOver");
+              },
+              loop: false,
+            });
           }
         }
         this.deadPlayers.push(sessionId);
