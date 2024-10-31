@@ -233,7 +233,6 @@ export class GameScene extends Phaser.Scene {
         this.userGroup,
         this.enemyPlayersGroup,
         (object1: any, object2: any) => {
-          console.warn("collide...");
           if (
             object1.getData("category") === "tail" &&
             object2.getData("category") === "head"
@@ -246,8 +245,6 @@ export class GameScene extends Phaser.Scene {
                 console.log(this.playerEntities[targetUserId]);
                 // Send kill request to server
                 this.killRequest = object2.getData("userId");
-              } else {
-                console.log("player already flagged");
               }
             }
           }
