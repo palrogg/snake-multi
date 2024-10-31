@@ -195,7 +195,9 @@ export class Snake {
       body.destroy();
     });
     this.tail.destroy();
-    this.debugHead.destroy();
-    this.debugBodies.map((c) => c.destroy());
+    if (this.showDebug) {
+      this.debugHead.destroy();
+      this.debugBodies.map((c) => c.destroy());
+    }
   }
 }
