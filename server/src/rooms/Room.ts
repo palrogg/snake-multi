@@ -29,6 +29,7 @@ export class MyRoom extends Room<MyRoomState> {
     "Potato",
   ];
   bodies: any[] = [];
+  maxTailSize = 500;
   public delayedInterval!: Delayed;
   circles: ArraySchema<Circle>;
   debug = true;
@@ -241,14 +242,21 @@ export class MyRoom extends Room<MyRoomState> {
             console.log("Overlap validity:", validOverlap);
             if (validOverlap) {
               // Make player grow
+              
+              // “tailSize” value gets displayed in the score board
               player.tailSize += targetFood.value;
               const lastBody = player.bodies[player.bodies.length - 1];
-              console.log(lastBody);
+              
+              // Actual tail doesn't exceed “maxTailSize”
+              const growCount =
+                player.tailSize <= this.maxTailSize
+                  ? targetFood.value
+                  : this.maxTailSize - player.tailSize;
               const newBodies = createBodies(
                 lastBody.x,
                 lastBody.y,
                 0,
-                targetFood.value
+                growCount
               );
               player.bodies = player.bodies.concat(newBodies);
 
@@ -257,7 +265,6 @@ export class MyRoom extends Room<MyRoomState> {
               if (this.debug === true) {
                 const c = new ArraySchema<Circle>();
                 player.bodies.forEach((body, i) => {
-                  console.log("Body position:", body);
                   c.push(new Circle({ x: body.x, y: body.y }));
                 });
                 player.circles = c;
