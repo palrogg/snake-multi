@@ -27,7 +27,7 @@ Build client:
   - [x] LeaderBoard template
   - [x] Connect with Player schema
   - [x] Sync score updates
-  - [ ] Update score after 200ms timeout, or at a timed interval
+  - [x] Update score after 200ms timeout, or at a timed interval
 - [x] Start screen with debug toggle
 - [ ] Fixes
   - [x] Collide vs overlap for enemies

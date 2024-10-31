@@ -17,6 +17,7 @@ export class GameScene extends Phaser.Scene {
   room: Room;
   debug: boolean;
   deadPlayers: string[] = [];
+  scoreTimeout;
 
   // Players
   playerEntities: { [sessionId: string]: any } = {};
@@ -128,8 +129,17 @@ export class GameScene extends Phaser.Scene {
           snake.head.setData("serverY", player.y);
           snake.head.setData("alive", player.alive);
           if (player.tailSize != snake.head.getData("tailSize")) {
-            this.scoreBoard.updateScore(player, sessionId);
             snake.head.setData("tailSize", player.tailSize);
+            if (this.scoreTimeout) {
+              this.time.removeEvent(this.scoreTimeout);
+            }
+            this.scoreTimeout = this.time.addEvent({
+              delay: 200,
+              callback: () => {
+                this.scoreBoard.updateScore(player, sessionId);
+              },
+              loop: false,
+            });
           }
         });
 
