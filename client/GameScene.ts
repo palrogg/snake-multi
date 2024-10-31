@@ -94,7 +94,13 @@ export class GameScene extends Phaser.Scene {
       // When Server sends food location and value, add it to the scene
       this.room.state.foodItems.onAdd((item: Food, key: string) => {
         const color = item.kind === "player-meat" ? 0xfff118 : 0xf0f0f0;
-        const food = this.add.circle(item.x, item.y, item.value * 2, color);
+        const radiusFactor = item.kind === "player-meat" ? 10 : 1;
+        const food = this.add.circle(
+          item.x,
+          item.y,
+          item.value * radiusFactor,
+          color
+        );
         food.setData("category", "food"); // for overlap detection
         food.name = key; // keep track of food id for server sync
         this.physics.add.existing(food);

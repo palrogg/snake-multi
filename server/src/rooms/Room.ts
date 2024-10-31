@@ -104,8 +104,8 @@ export class MyRoom extends Room<MyRoomState> {
       // Set food limit to 5
       if (this.state.foodItems.size < 5) {
         const randomLocation = this.getRandomLocation();
-        // From 2 to 4
-        const randomValue = 2 + Math.round(Math.random() * 2);
+        // From 5 to 10
+        const randomValue = 5 + Math.round(Math.random() * 5);
         this.state.foodItems.set(
           `food_${this.foodCount}`,
           new Food({
@@ -197,7 +197,7 @@ export class MyRoom extends Room<MyRoomState> {
         new Food({
           x: body.x,
           y: body.y,
-          value: 4,
+          value: 1,
           kind: "player-meat",
         })
       );
@@ -242,11 +242,11 @@ export class MyRoom extends Room<MyRoomState> {
             console.log("Overlap validity:", validOverlap);
             if (validOverlap) {
               // Make player grow
-              
+
               // “tailSize” value gets displayed in the score board
               player.tailSize += targetFood.value;
               const lastBody = player.bodies[player.bodies.length - 1];
-              
+
               // Actual tail doesn't exceed “maxTailSize”
               const growCount =
                 player.tailSize <= this.maxTailSize
