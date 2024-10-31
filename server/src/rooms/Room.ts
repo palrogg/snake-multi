@@ -104,8 +104,8 @@ export class MyRoom extends Room<MyRoomState> {
       // Set food limit to 5
       if (this.state.foodItems.size < 5) {
         const randomLocation = this.getRandomLocation();
-        // From 5 to 10
-        const randomValue = 5 + Math.round(Math.random() * 5);
+        // From 2 to 4
+        const randomValue = 2 + Math.round(Math.random() * 2);
         this.state.foodItems.set(
           `food_${this.foodCount}`,
           new Food({
@@ -197,7 +197,7 @@ export class MyRoom extends Room<MyRoomState> {
         new Food({
           x: body.x,
           y: body.y,
-          value: 10,
+          value: 4,
           kind: "player-meat",
         })
       );
