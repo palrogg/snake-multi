@@ -12,6 +12,9 @@ export class Snake {
   currentScene: Phaser.Scene;
   blinkTimer: any;
   killRequested = false;
+  showDebug = false;
+  debugHead: any;
+  debugBodies: any[];
   maxTailSize = 500;
 
   constructor(
@@ -143,6 +146,47 @@ export class Snake {
     this.killRequested = true;
   }
 
+  createDebugRectangles(circles: Circle[]) {
+    /**
+     * Create rectangles to show server-side
+     * player position and tail
+     */
+    this.showDebug = true;
+    this.debugHead = this.currentScene.add
+      .rectangle(0, 0, this.head.width, this.head.height)
+      .setStrokeStyle(1, 0xff0000);
+
+    this.debugBodies = circles.map((i) => {
+      const rect = this.currentScene.add.rectangle(i.x, i.y, 4, 4, 0xff0000);
+      rect.depth = 5;
+      return rect;
+    });
+  }
+
+  updateDebugRectangles(x: number, y: number, circles: Circle[]) {
+    /**
+     * Update rectangles which show server-side
+     * player position
+     */
+
+    this.debugHead.x = x;
+    this.debugHead.y = y;
+
+    // Add new debug rects if needed
+    if (circles.length > this.debugBodies.length) {
+      const newRects = circles.slice(this.debugBodies.length).map((i) => {
+        const rect = this.currentScene.add.rectangle(i.x, i.y, 4, 4, 0xff0000);
+        rect.depth = 5;
+        return rect;
+      });
+      this.debugBodies = this.debugBodies.concat(newRects);
+    }
+    circles.map((circle: Circle, i: number) => {
+      this.debugBodies[i].x = circle.x;
+      this.debugBodies[i].y = circle.y;
+    });
+  }
+
   destroy() {
     console.log("Destroy entity!!");
     this.stopBlink();
@@ -151,5 +195,7 @@ export class Snake {
       body.destroy();
     });
     this.tail.destroy();
+    this.debugHead.destroy();
+    this.debugBodies.map((c) => c.destroy());
   }
 }

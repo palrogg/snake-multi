@@ -133,6 +133,14 @@ export class GameScene extends Phaser.Scene {
           }
         });
 
+        // Debug
+        if (this.debug) {
+          snake.createDebugRectangles(player.circles);
+          player.onChange(() => {
+            snake.updateDebugRectangles(player.x, player.y, player.circles);
+          });
+        }
+
         // If snake is current player
         if (sessionId === this.room.sessionId) {
           snake.bodies.map((body) => {
@@ -141,45 +149,6 @@ export class GameScene extends Phaser.Scene {
 
           this.currentPlayerSnake = snake;
           this.userGroup.add(this.currentPlayerSnake.head);
-
-          // Show current server position for debug
-          // TODO: refactor the following 20 lines
-          if (this.debug) {
-            this.remoteRef = this.add.rectangle(
-              0,
-              0,
-              snake.head.width,
-              snake.head.height
-            );
-            this.remoteRef.setStrokeStyle(1, 0xff0000);
-            player.onChange(() => {
-              this.remoteRef.x = player.x;
-              this.remoteRef.y = player.y;
-            });
-            this.debugRects = player.circles.map((i) => {
-              const rect = this.add.rectangle(i.x, i.y, 4, 4, 0xff0000);
-              rect.depth = 5;
-              return rect;
-            });
-
-            player.onChange(() => {
-              // Add new debug rects if needed
-              if (player.circles.length > this.debugRects.length) {
-                const newRects = player.circles
-                  .slice(this.debugRects.length)
-                  .map((i) => {
-                    const rect = this.add.rectangle(i.x, i.y, 4, 4, 0xff0000);
-                    rect.depth = 5;
-                    return rect;
-                  });
-                this.debugRects = this.debugRects.concat(newRects);
-              }
-              player.circles.map((circle: Circle, i: number) => {
-                this.debugRects[i].x = circle.x;
-                this.debugRects[i].y = circle.y;
-              });
-            });
-          }
         } else {
           // remote players
           this.enemyPlayersGroup.add(snake.head);
