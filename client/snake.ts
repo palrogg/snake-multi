@@ -12,6 +12,7 @@ export class Snake {
   currentScene: Phaser.Scene;
   blinkTimer: any;
   killRequested = false;
+  maxTailSize = 500;
 
   constructor(
     scene: Phaser.Scene,
@@ -113,7 +114,11 @@ export class Snake {
     origin: Phaser.Math.Vector2,
     physicsGroup: Phaser.Physics.Arcade.Group | null = null
   ) {
-    const limit = targetLength - this.length;
+    const limit =
+      targetLength < this.maxTailSize
+        ? targetLength - this.length
+        : this.maxTailSize - this.length;
+
     for (let i = 0; i < limit; i++) {
       const body = scene.add.circle(
         origin.x + i * spacing,
