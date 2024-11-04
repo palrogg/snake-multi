@@ -3,6 +3,7 @@ import { Client, Room } from "colyseus.js";
 import { Snake } from "./snake";
 import { ScoreBoard } from "./ScoreBoard";
 import { AccelerometerInput } from "./accelerometer";
+import { Swipe } from "phaser3-rex-plugins/plugins/gestures.js";
 
 export class GameScene extends Phaser.Scene {
   constructor() {
@@ -24,6 +25,8 @@ export class GameScene extends Phaser.Scene {
   keyD: Phaser.Input.Keyboard.Key;
   keyW: Phaser.Input.Keyboard.Key;
   accelerometer: AccelerometerInput;
+  swipe: any;
+  // rexGestures: GesturesPlugin
 
   // Players
   playerEntities: { [sessionId: string]: any } = {};
@@ -67,6 +70,7 @@ export class GameScene extends Phaser.Scene {
     this.keyD = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.D);
     this.keyW = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.W);
     this.accelerometer = new AccelerometerInput();
+    this.swipe = new Swipe(this, { dir: "4dir" });
   }
 
   async create(data: { debug: boolean; playAgain: boolean }) {
@@ -295,19 +299,13 @@ export class GameScene extends Phaser.Scene {
     // Send input to the server
     if (this.isUserAlive) {
       this.inputPayload.left =
-        this.cursorKeys.left.isDown ||
-        this.keyA.isDown ||
-        this.accelerometer.left;
+        this.cursorKeys.left.isDown || this.keyA.isDown || this.swipe.left;
       this.inputPayload.right =
-        this.cursorKeys.right.isDown ||
-        this.keyD.isDown ||
-        this.accelerometer.right;
+        this.cursorKeys.right.isDown || this.keyD.isDown || this.swipe.right;
       this.inputPayload.up =
-        this.cursorKeys.up.isDown || this.keyW.isDown || this.accelerometer.up;
+        this.cursorKeys.up.isDown || this.keyW.isDown || this.swipe.up;
       this.inputPayload.down =
-        this.cursorKeys.down.isDown ||
-        this.keyS.isDown ||
-        this.accelerometer.down;
+        this.cursorKeys.down.isDown || this.keyS.isDown || this.swipe.down;
       if (this.eatRequest !== null) {
         // console.log("We send an “eatRequest” for", this.eatRequest);
         this.inputPayload.eatRequest = this.eatRequest;

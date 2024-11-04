@@ -17,6 +17,7 @@
   },
   "dependencies": {
     "colyseus.js": "^0.15.26",
-    "phaser": "^3.86.0"
+    "phaser": "^3.86.0",
+    "phaser3-rex-plugins": "^1.80.10"
   }
 }
