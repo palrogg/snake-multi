@@ -9,7 +9,7 @@ const config: Phaser.Types.Core.GameConfig = {
   width: 800,
   height: 600,
   backgroundColor: "#0C0D5A",
-  parent: "phaser-example",
+  parent: "container",
   physics: {
     default: "arcade",
     arcade: {
@@ -18,7 +18,13 @@ const config: Phaser.Types.Core.GameConfig = {
   },
   pixelArt: true,
   scene: [TitleScene, GameScene, GameOver],
-
+  // autoCenter: true,
+  scale: {
+    mode: Phaser.Scale.FIT,
+    autoCenter: Phaser.Scale.CENTER_BOTH,
+    width: 800,
+    height: 600,
+  },
   plugins: {
     global: [
       {
