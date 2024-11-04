@@ -2,6 +2,7 @@ import Phaser from "phaser";
 import { Client, Room } from "colyseus.js";
 import { Snake } from "./snake";
 import { ScoreBoard } from "./ScoreBoard";
+import { AccelerometerInput } from "./accelerometer";
 
 export class GameScene extends Phaser.Scene {
   constructor() {
@@ -17,7 +18,12 @@ export class GameScene extends Phaser.Scene {
   room: Room;
   debug: boolean;
   deadPlayers: string[] = [];
-  scoreTimeout;
+  scoreTimeout: Phaser.Time.TimerEvent;
+  keyA: Phaser.Input.Keyboard.Key;
+  keyS: Phaser.Input.Keyboard.Key;
+  keyD: Phaser.Input.Keyboard.Key;
+  keyW: Phaser.Input.Keyboard.Key;
+  accelerometer: AccelerometerInput;
 
   // Players
   playerEntities: { [sessionId: string]: any } = {};
@@ -56,6 +62,11 @@ export class GameScene extends Phaser.Scene {
 
   preload() {
     this.cursorKeys = this.input.keyboard.createCursorKeys();
+    this.keyA = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.A);
+    this.keyS = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.S);
+    this.keyD = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.D);
+    this.keyW = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.W);
+    this.accelerometer = new AccelerometerInput();
   }
 
   async create(data: { debug: boolean; playAgain: boolean }) {
@@ -283,10 +294,20 @@ export class GameScene extends Phaser.Scene {
 
     // Send input to the server
     if (this.isUserAlive) {
-      this.inputPayload.left = this.cursorKeys.left.isDown;
-      this.inputPayload.right = this.cursorKeys.right.isDown;
-      this.inputPayload.up = this.cursorKeys.up.isDown;
-      this.inputPayload.down = this.cursorKeys.down.isDown;
+      this.inputPayload.left =
+        this.cursorKeys.left.isDown ||
+        this.keyA.isDown ||
+        this.accelerometer.left;
+      this.inputPayload.right =
+        this.cursorKeys.right.isDown ||
+        this.keyD.isDown ||
+        this.accelerometer.right;
+      this.inputPayload.up =
+        this.cursorKeys.up.isDown || this.keyW.isDown || this.accelerometer.up;
+      this.inputPayload.down =
+        this.cursorKeys.down.isDown ||
+        this.keyS.isDown ||
+        this.accelerometer.down;
       if (this.eatRequest !== null) {
         // console.log("We send an “eatRequest” for", this.eatRequest);
         this.inputPayload.eatRequest = this.eatRequest;
