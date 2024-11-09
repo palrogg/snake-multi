@@ -3,6 +3,7 @@
   "version": "1.0.0",
   "description": "",
   "scripts": {
+    "build": "npx parcel build index.html --public-url /snake/ --dist-dir snake",
     "test": "echo \"Error: no test specified\" && exit 1",
     "start": "parcel serve index.html"
   },

@@ -16,12 +16,12 @@ Build client:
 - [x] Client-side physics with server-side validation
 - [x] Make snakes grow when they eat
 - [x] Create death sequence
-- [ ] Fine-tune server-client sync
+- [x] Fine-tune server-client sync
   - [x] Server validation should take snake tails into account
   - [x] Sync available food (for now: not synced with other players than the one who ate it)
-- [ ] Mobile-friendly
-  - [ ] Same Phaser config as [Quatre apparts](https://github.com/GameLab-UNIL-EPFL/quatre-apparts-et-un-confinement)?
-  - [ ] Mobile inputs cf. "Space"
+- [x] Mobile-friendly (sort of)
+  - [x] Same Phaser config as [Quatre apparts](https://github.com/GameLab-UNIL-EPFL/quatre-apparts-et-un-confinement)?
+  - [x] Mobile inputs cf. "Space"
 - [x] Add a leaderboard
   - [x] React or Phaser? Phaser
   - [x] LeaderBoard template
