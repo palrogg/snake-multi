@@ -2,8 +2,7 @@ import Phaser from "phaser";
 import { Client, Room } from "colyseus.js";
 import { Snake } from "./snake";
 import { ScoreBoard } from "./ScoreBoard";
-import { AccelerometerInput } from "./accelerometer";
-import { Swipe } from "phaser3-rex-plugins/plugins/gestures.js";
+import { SwipeInput } from "./swipe";
 
 export class GameScene extends Phaser.Scene {
   constructor() {
@@ -19,14 +18,12 @@ export class GameScene extends Phaser.Scene {
   room: Room;
   debug: boolean;
   deadPlayers: string[] = [];
-  scoreTimeout: Phaser.Time.TimerEvent;
+  scoreTimeout: Phaser.Time.TimerEvent | null;
   keyA: Phaser.Input.Keyboard.Key;
   keyS: Phaser.Input.Keyboard.Key;
   keyD: Phaser.Input.Keyboard.Key;
   keyW: Phaser.Input.Keyboard.Key;
-  accelerometer: AccelerometerInput;
-  swipe: any;
-  // rexGestures: GesturesPlugin
+  swipeInput: SwipeInput;
 
   // Players
   playerEntities: { [sessionId: string]: any } = {};
@@ -69,8 +66,7 @@ export class GameScene extends Phaser.Scene {
     this.keyS = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.S);
     this.keyD = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.D);
     this.keyW = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.W);
-    this.accelerometer = new AccelerometerInput();
-    this.swipe = new Swipe(this, { dir: "4dir" });
+    this.swipeInput = new SwipeInput("container");
   }
 
   async create(data: { debug: boolean; playAgain: boolean }) {
@@ -242,7 +238,6 @@ export class GameScene extends Phaser.Scene {
               if (!this.playerEntities[targetUserId].killRequested === true) {
                 console.log("Flag user: killRequested", targetUserId);
                 this.playerEntities[targetUserId].markForKill();
-                console.log(this.playerEntities[targetUserId]);
                 // Send kill request to server
                 this.killRequest = object2.getData("userId");
               }
@@ -299,15 +294,16 @@ export class GameScene extends Phaser.Scene {
     // Send input to the server
     if (this.isUserAlive) {
       this.inputPayload.left =
-        this.cursorKeys.left.isDown || this.keyA.isDown || this.swipe.left;
+        this.cursorKeys.left.isDown || this.keyA.isDown || this.swipeInput.left;
       this.inputPayload.right =
-        this.cursorKeys.right.isDown || this.keyD.isDown || this.swipe.right;
+        this.cursorKeys.right.isDown ||
+        this.keyD.isDown ||
+        this.swipeInput.right;
       this.inputPayload.up =
-        this.cursorKeys.up.isDown || this.keyW.isDown || this.swipe.up;
+        this.cursorKeys.up.isDown || this.keyW.isDown || this.swipeInput.up;
       this.inputPayload.down =
-        this.cursorKeys.down.isDown || this.keyS.isDown || this.swipe.down;
+        this.cursorKeys.down.isDown || this.keyS.isDown || this.swipeInput.down;
       if (this.eatRequest !== null) {
-        // console.log("We send an “eatRequest” for", this.eatRequest);
         this.inputPayload.eatRequest = this.eatRequest;
         this.eatRequest = null;
       }
