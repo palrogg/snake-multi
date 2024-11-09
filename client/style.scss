@@ -1,3 +1,7 @@
+html{
+    overscroll-behavior: none;
+    -webkit-overflow-scrolling: auto;
+}
 body{
     margin: 0;
     padding: 0;
