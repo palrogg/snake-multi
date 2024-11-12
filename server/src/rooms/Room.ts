@@ -65,8 +65,8 @@ export class MyRoom extends Room<MyRoomState> {
     y1: number,
     x2: number,
     y2: number,
-    xTolerance = 50,
-    yTolerance = 50
+    xTolerance = 20,
+    yTolerance = 20
   ) {
     // console.log(`Validating overlap: (${x1}, ${y1}) vs (${x2}, ${y2})`);
     const xDistance = Math.abs(x2 - x1);
@@ -237,7 +237,9 @@ export class MyRoom extends Room<MyRoomState> {
               player.x,
               player.y,
               targetFood.x,
-              targetFood.y
+              targetFood.y,
+              40,
+              40,
             );
             console.log("Overlap validity:", validOverlap);
             if (validOverlap) {
@@ -282,23 +284,56 @@ export class MyRoom extends Room<MyRoomState> {
           } else {
             const targetEnemy = this.state.players.get(input.killRequest);
             if (targetEnemy) {
-              // Server validation: player head and tail
-              const validOverlap = player.bodies
-                .map((body) =>
-                  this.validateOverlap(
-                    body.x,
-                    body.y,
-                    targetEnemy.x,
-                    targetEnemy.y
+              // Case: head-head
+              const headOverlap = this.validateOverlap(
+                player.x,
+                player.y,
+                targetEnemy.x,
+                targetEnemy.y,
+                32,
+                32
+              );
+              if (headOverlap) {
+                console.log("Head overlap!!!");
+                const xSum = targetEnemy.xRequest + player.xRequest;
+                const ySum = targetEnemy.yRequest + player.yRequest;
+                if (xSum === 0 && ySum === 0) {
+                  console.log("Opposite direction: both players die.");
+                  player.alive = false;
+                  targetEnemy.alive = false;
+                } else if (xSum === 2 || ySum === 2) {
+                  console.log("Same direction: should not occur...");
+                  player.alive = false;
+                  targetEnemy.alive = false;
+                } else {
+                  // Take both player directions;
+                  // Player which direction is clear is safe
+                  console.log(
+                    "Need to test which player lives or die; For now: both die"
+                  );
+                  player.alive = false;
+                  targetEnemy.alive = false;
+                }
+              } else {
+                // Server validation: player head and tail
+                const validOverlap = player.bodies
+                  .map((body) =>
+                    this.validateOverlap(
+                      body.x,
+                      body.y,
+                      targetEnemy.x,
+                      targetEnemy.y
+                    )
                   )
-                )
-                .some((result: boolean) => result === true);
-              console.log("Kill Overlap validity:", validOverlap);
-              if (validOverlap) {
-                // Flag enemy player as dead
-                targetEnemy.alive = false;
-                // And turn him into meat
-                this.addSnakeMeat(targetEnemy);
+                  .some((result: boolean) => result === true);
+                if (validOverlap) {
+                  // Check direction of both players
+
+                  // Flag enemy player as dead
+                  targetEnemy.alive = false;
+                  // And turn him into meat
+                  this.addSnakeMeat(targetEnemy);
+                }
               }
             } else {
               console.warn("Target enemy “", input.eatRequest, "” not found!");
