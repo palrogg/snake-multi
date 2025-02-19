@@ -74,6 +74,40 @@ export class MyRoom extends Room<MyRoomState> {
     return xDistance < xTolerance && yDistance < yTolerance;
   }
 
+  createPlayer(name?: string | null) {
+    const player = new Player();
+
+    // place Player at a random position
+    const randomLocation = this.getRandomLocation();
+    player.x = randomLocation.x;
+    player.y = randomLocation.y;
+    player.tailSize = 20;
+    player.kills = 0;
+    player.alive = true;
+    player.name = name ? name : this.playerNames[this.playerIndex];
+    this.playerIndex++;
+    if (this.playerIndex > 9) {
+      this.playerIndex = 0;
+    }
+
+    // x/y input requests
+    player.xRequest = -1;
+    player.yRequest = 0;
+
+    const length = 20;
+    const spacing = 2;
+
+    // player tail
+    // The Collection only serves for debug
+    player.bodies = createBodies(player.x, player.y, spacing, length);
+    const collection = new ArraySchema<Circle>();
+    player.bodies.forEach((body, i) => {
+      collection.push(new Circle({ x: body.x, y: body.y }));
+    });
+    player.circles = collection;
+    return player;
+  }
+
   onCreate(options: any) {
     let elapsedTime = 0;
 
@@ -122,40 +156,16 @@ export class MyRoom extends Room<MyRoomState> {
 
   onJoin(client: Client, options: any) {
     console.log(client.sessionId, "joined!");
-    const player = new Player();
-
-    // place Player at a random position
-    const randomLocation = this.getRandomLocation();
-    player.x = randomLocation.x;
-    player.y = randomLocation.y;
-    player.tailSize = 20;
-    player.kills = 0;
-    player.alive = true;
-    player.name = this.playerNames[this.playerIndex];
-    this.playerIndex++;
-    if (this.playerIndex > 9) {
-      this.playerIndex = 0;
-    }
-
-    // x/y input requests
-    player.xRequest = -1;
-    player.yRequest = 0;
-
-    const length = 20;
-    const spacing = 2;
-
-    // player tail
-    // The Collection only serves for debug
-    player.bodies = createBodies(player.x, player.y, spacing, length);
-    const collection = new ArraySchema<Circle>();
-    player.bodies.forEach((body, i) => {
-      collection.push(new Circle({ x: body.x, y: body.y }));
-    });
-    player.circles = collection;
+    const player = this.createPlayer();
 
     // identify player by its sessionId
     this.state.players.set(client.sessionId, player);
 
+    if (this.state.players.size === 1) {
+      // Create bot player
+      const botPlayer = this.createPlayer("bot");
+      this.state.players.set("bot", botPlayer);
+    }
     // To work on  death sequence
     // setTimeout(() => {
     //   const thePlayer = this.state.players.get(client.sessionId);
@@ -239,7 +249,7 @@ export class MyRoom extends Room<MyRoomState> {
               targetFood.x,
               targetFood.y,
               40,
-              40,
+              40
             );
             console.log("Overlap validity:", validOverlap);
             if (validOverlap) {
